@@ -45,8 +45,8 @@ void MainWindow::setupToolbar()
 
 void MainWindow::setupConnections()
 {
-	connect(ui_->btnOpenPacketGen, &QPushButton::clicked, this, [this]() {
-		auto *window = new PacketGeneratorWindow(this);
+	connect(ui_->btnOpenPacketGen, &QPushButton::clicked, this, []() {
+		auto *window = new PacketGeneratorWindow();
 		window->setAttribute(Qt::WA_DeleteOnClose, true);
 		window->show();
 	});
