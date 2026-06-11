@@ -25,7 +25,11 @@ option(USE_qt6 "qt based gui" ON)
 if(USE_qt6)
 	list( APPEND CMAKE_PREFIX_PATH ${QT6_PREFIX_PATH})
 	find_package(Qt6 REQUIRED COMPONENTS Widgets)
-	add_subdirectory(ui)
-	add_executable(Boar $<TARGET_OBJECTS:qtui>)
-	target_link_libraries(Boar PRIVATE qtui)
+	add_subdirectory(src)
+	add_executable(Boar
+		$<TARGET_OBJECTS:qtui>
+		$<TARGET_OBJECTS:qtui_dialogs>
+		$<TARGET_OBJECTS:qtui_widgets>
+	)
+	target_link_libraries(Boar PRIVATE core qtui qtui_dialogs qtui_widgets)
 endif()
