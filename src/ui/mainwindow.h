@@ -2,14 +2,20 @@
 
 #include <QMainWindow>
 
+#include <memory>
+
 #include "../core/appconfig.h"
-#include "ui_MainWindow.h"
+
+namespace Ui
+{
+class MainWindow;
+}
 
 class MainWindow : public QMainWindow
 {
 public:
 	explicit MainWindow(QWidget *parent = nullptr);
-	~MainWindow() override = default;
+	~MainWindow() override;
 
 private:
 	void applyConfig(const AppConfig &config);
@@ -17,6 +23,6 @@ private:
 	void setupConnections();
 	void showConfigDialog();
 
-	Ui::MainWindow ui_;
+	std::unique_ptr<Ui::MainWindow> ui_;
 	AppConfig config_ {};
 };

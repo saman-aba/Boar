@@ -6,26 +6,27 @@
 #include <QStatusBar>
 
 #include "dialogs/configdialog.h"
-#include "dialogs/newpacketdialog.h"
+#include "packetgeneratorwindow.h"
+#include "ui_MainWindow.h"
 
 MainWindow::MainWindow(QWidget *parent)
 	: QMainWindow(parent)
+	, ui_(std::make_unique<Ui::MainWindow>())
 	, config_(AppConfig::load())
 {
-	ui_.setupUi(this);
+	ui_->setupUi(this);
 	setupToolbar();
 	setupConnections();
 	applyConfig(config_);
 }
+
+MainWindow::~MainWindow() = default;
 
 void MainWindow::applyConfig(const AppConfig &config)
 {
 	config_ = config;
 	setWindowTitle(config_.windowTitle);
 	resize(config_.windowWidth, config_.windowHeight);
-	ui_.payloadTextEdit->setMinimumHeight(config_.payloadBoxMinHeight);
-	ui_.sendButton->setFixedWidth(config_.sendButtonWidth);
-	ui_.payloadTextEdit->setPlainText(config_.lastPayload);
 	statusBar()->showMessage(QStringLiteral("Config: %1").arg(config_.configFilePath));
 }
 
@@ -36,20 +37,18 @@ void MainWindow::setupToolbar()
 	connect(configAction, &QAction::triggered, this, [this]() {
 		showConfigDialog();
 	});
-	removeToolBar(ui_.mainToolBar);
-	ui_.mainToolBar->hide();
+	if (ui_->toolBarMain) {
+		removeToolBar(ui_->toolBarMain);
+		ui_->toolBarMain->hide();
+	}
 }
 
 void MainWindow::setupConnections()
 {
-	connect(ui_.sendButton, &QPushButton::clicked, this, [this]() {
-		config_.lastPayload = ui_.payloadTextEdit->toPlainText();
-		statusBar()->showMessage(QStringLiteral("Payload captured"), 2000);
-	});
-	connect(ui_.newPacketButton, &QPushButton::clicked, this, [this]() {
-		auto *dialog = new NewPacketDialog(this);
-		dialog->setAttribute(Qt::WA_DeleteOnClose, true);
-		dialog->show();
+	connect(ui_->btnOpenPacketGen, &QPushButton::clicked, this, [this]() {
+		auto *window = new PacketGeneratorWindow(this);
+		window->setAttribute(Qt::WA_DeleteOnClose, true);
+		window->show();
 	});
 }
 
