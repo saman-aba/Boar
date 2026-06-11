@@ -1,0 +1,600 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>TcapEditorWidget</class>
+ <widget class="QWidget" name="TcapEditorWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>980</width>
+    <height>720</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>TCAP / MAP / CAP / SMS Editor</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">
+    QWidget { background: #20252b; color: #d7dde5; font-family: &quot;Segoe UI&quot;; }
+    QGroupBox {
+        border: 1px solid #3b4652;
+        border-radius: 4px;
+        margin-top: 15px;
+        font-weight: bold;
+    }
+    QGroupBox::title {
+        subcontrol-origin: margin;
+        left: 10px;
+        padding: 0 4px;
+    }
+    QLabel {
+        color: #cfd6df;
+    }
+    QLineEdit, QComboBox, QSpinBox, QTextEdit, QPlainTextEdit {
+        background: #1a1f24;
+        border: 1px solid #3b4652;
+        padding: 4px;
+        color: #ffffff;
+        border-radius: 2px;
+    }
+    QPushButton {
+        background: #2f6fed;
+        border-radius: 3px;
+        padding: 5px 14px;
+        color: white;
+        border: none;
+    }
+    QPushButton:hover {
+        background: #3d7cff;
+    }
+    QPushButton#btnRemoveParam {
+        background: #c0392b;
+    }
+    QPushButton#btnRemoveParam:hover {
+        background: #d44a3a;
+    }
+    QTreeWidget, QTableWidget {
+        background: #1a1f24;
+        border: 1px solid #3b4652;
+        gridline-color: #3b4652;
+    }
+    QHeaderView::section {
+        background: #2b323a;
+        padding: 4px;
+        border: 1px solid #3b4652;
+        color: #d7dde5;
+    }
+    QCheckBox {
+        spacing: 6px;
+    }
+   </string>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <widget class="QGroupBox" name="groupTransaction">
+     <property name="title">
+      <string>TCAP Transaction</string>
+     </property>
+     <layout class="QHBoxLayout" name="transactionLayout">
+      <item>
+       <layout class="QVBoxLayout" name="messageTypeLayout">
+        <item>
+         <widget class="QLabel" name="labelMessageType">
+          <property name="text">
+           <string>TCAP Message Type</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="comboTcapMessageType">
+          <item><property name="text"><string>Begin</string></property></item>
+          <item><property name="text"><string>Continue</string></property></item>
+          <item><property name="text"><string>End</string></property></item>
+          <item><property name="text"><string>Abort</string></property></item>
+          <item><property name="text"><string>Unidirectional</string></property></item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="otidLayout">
+        <item>
+         <widget class="QLabel" name="labelOtid">
+          <property name="text">
+           <string>Originating TID (OTID)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="editOtid">
+          <property name="placeholderText">
+           <string>e.g. 11223344 (hex)</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="dtidLayout">
+        <item>
+         <widget class="QLabel" name="labelDtid">
+          <property name="text">
+           <string>Destination TID (DTID)</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QLineEdit" name="editDtid">
+          <property name="placeholderText">
+           <string>optional for Begin / required for Continue/End</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="qosLayout">
+        <item>
+         <widget class="QLabel" name="labelDialogueMode">
+          <property name="text">
+           <string>Dialogue Mode</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="comboDialogueMode">
+          <item><property name="text"><string>Structured</string></property></item>
+          <item><property name="text"><string>Basic</string></property></item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+
+   <item>
+    <widget class="QGroupBox" name="groupApplication">
+     <property name="title">
+      <string>Application Family / Operation</string>
+     </property>
+     <layout class="QHBoxLayout" name="applicationLayout">
+      <item>
+       <layout class="QVBoxLayout" name="familyLayout">
+        <item>
+         <widget class="QLabel" name="labelFamily">
+          <property name="text">
+           <string>Application Family</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="comboAppFamily">
+          <item><property name="text"><string>MAP</string></property></item>
+          <item><property name="text"><string>CAP</string></property></item>
+          <item><property name="text"><string>SMS</string></property></item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="serviceLayout">
+        <item>
+         <widget class="QLabel" name="labelService">
+          <property name="text">
+           <string>Service / Package</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="comboService">
+          <item><property name="text"><string>Mobility Management</string></property></item>
+          <item><property name="text"><string>Authentication</string></property></item>
+          <item><property name="text"><string>Subscriber Data</string></property></item>
+          <item><property name="text"><string>Camel Control</string></property></item>
+          <item><property name="text"><string>Short Message Service</string></property></item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="operationLayout">
+        <item>
+         <widget class="QLabel" name="labelOperation">
+          <property name="text">
+           <string>Operation / Procedure</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="comboOperation">
+          <item><property name="text"><string>updateLocation</string></property></item>
+          <item><property name="text"><string>sendAuthenticationInfo</string></property></item>
+          <item><property name="text"><string>insertSubscriberData</string></property></item>
+          <item><property name="text"><string>initialDP</string></property></item>
+          <item><property name="text"><string>mo-ForwardSM</string></property></item>
+          <item><property name="text"><string>mt-ForwardSM</string></property></item>
+          <item><property name="text"><string>sendRoutingInfoForSM</string></property></item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <layout class="QVBoxLayout" name="componentTypeLayout">
+        <item>
+         <widget class="QLabel" name="labelComponentType">
+          <property name="text">
+           <string>Component Type</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QComboBox" name="comboComponentType">
+          <item><property name="text"><string>Invoke</string></property></item>
+          <item><property name="text"><string>ReturnResult</string></property></item>
+          <item><property name="text"><string>ReturnError</string></property></item>
+          <item><property name="text"><string>Reject</string></property></item>
+         </widget>
+        </item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+
+   <item>
+    <widget class="QGroupBox" name="groupDialogue">
+     <property name="title">
+      <string>Dialogue / Addressing</string>
+     </property>
+     <layout class="QGridLayout" name="dialogueLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelApplicationContext">
+        <property name="text">
+         <string>Application Context Name</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLineEdit" name="editApplicationContext">
+        <property name="placeholderText">
+         <string>e.g. networkLocUpContext-v3</string>
+        </property>
+       </widget>
+      </item>
+
+      <item row="0" column="1">
+       <widget class="QLabel" name="labelCallingParty">
+        <property name="text">
+         <string>Calling Party SCCP Address</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="editCallingParty">
+        <property name="placeholderText">
+         <string>e.g. GT / SSN / PC</string>
+        </property>
+       </widget>
+      </item>
+
+      <item row="0" column="2">
+       <widget class="QLabel" name="labelCalledParty">
+        <property name="text">
+         <string>Called Party SCCP Address</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLineEdit" name="editCalledParty">
+        <property name="placeholderText">
+         <string>e.g. HLR / MSC / SMSC GT</string>
+        </property>
+       </widget>
+      </item>
+
+      <item row="2" column="0">
+       <widget class="QCheckBox" name="checkDialoguePortion">
+        <property name="text">
+         <string>Include Dialogue Portion</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QCheckBox" name="checkComponentsPresent">
+        <property name="text">
+         <string>Include Component Portion</string>
+        </property>
+        <property name="checked">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QCheckBox" name="checkSccpRouting">
+        <property name="text">
+         <string>Use SCCP Routing Context</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+
+   <item>
+    <widget class="QGroupBox" name="groupComponent">
+     <property name="title">
+      <string>Component Editor</string>
+     </property>
+     <layout class="QGridLayout" name="componentLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelInvokeId">
+        <property name="text">
+         <string>Invoke ID</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QSpinBox" name="spinInvokeId">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+
+      <item row="0" column="1">
+       <widget class="QLabel" name="labelLinkedId">
+        <property name="text">
+         <string>Linked ID</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSpinBox" name="spinLinkedId">
+        <property name="maximum">
+         <number>255</number>
+        </property>
+       </widget>
+      </item>
+
+      <item row="0" column="2">
+       <widget class="QLabel" name="labelOperationCode">
+        <property name="text">
+         <string>Operation Code</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLineEdit" name="editOperationCode">
+        <property name="placeholderText">
+         <string>numeric or symbolic operation code</string>
+        </property>
+       </widget>
+      </item>
+
+      <item row="0" column="3">
+       <widget class="QLabel" name="labelClass">
+        <property name="text">
+         <string>Operation Class</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="3">
+       <widget class="QComboBox" name="comboOperationClass">
+        <item><property name="text"><string>Class 1</string></property></item>
+        <item><property name="text"><string>Class 2</string></property></item>
+        <item><property name="text"><string>Class 3</string></property></item>
+        <item><property name="text"><string>Class 4</string></property></item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+
+   <item>
+    <widget class="QGroupBox" name="groupParameters">
+     <property name="title">
+      <string>ASN.1 Parameters / Nested Fields</string>
+     </property>
+     <layout class="QVBoxLayout" name="parametersMainLayout">
+      <item>
+       <layout class="QHBoxLayout" name="parameterToolbarLayout">
+        <item>
+         <widget class="QPushButton" name="btnLoadTemplate">
+          <property name="text">
+           <string>Load Template</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnAddParam">
+          <property name="text">
+           <string>+ Add Parameter</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnAddChildParam">
+          <property name="text">
+           <string>+ Add Child</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnMoveParamUp">
+          <property name="text">
+           <string>↑ Move Up</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnMoveParamDown">
+          <property name="text">
+           <string>↓ Move Down</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_1">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </spacer>
+        </item>
+        <item>
+         <widget class="QPushButton" name="btnRemoveParam">
+          <property name="text">
+           <string>Delete Selected</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <widget class="QTreeWidget" name="treeParameters">
+        <property name="alternatingRowColors">
+         <bool>false</bool>
+        </property>
+        <property name="dragEnabled">
+         <bool>true</bool>
+        </property>
+        <property name="dragDropMode">
+         <enum>QAbstractItemView::InternalMove</enum>
+        </property>
+        <property name="selectionMode">
+         <enum>QAbstractItemView::SingleSelection</enum>
+        </property>
+        <column>
+         <property name="text">
+          <string>Parameter Name</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>ASN.1 Type</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Tag/Class</string>
+         </property>
+        </column>
+        <column>
+         <property name="text">
+          <string>Value</string>
+         </property>
+        </column>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+
+   <item>
+    <widget class="QGroupBox" name="groupProtocolNotes">
+     <property name="title">
+      <string>Protocol Notes / SMS Payload</string>
+     </property>
+     <layout class="QGridLayout" name="notesLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelSmsScAddress">
+        <property name="text">
+         <string>SMSC Address / Service Center</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLineEdit" name="editSmscAddress">
+        <property name="placeholderText">
+         <string>for SMS-related operations</string>
+        </property>
+       </widget>
+      </item>
+
+      <item row="0" column="1">
+       <widget class="QLabel" name="labelMsisdn">
+        <property name="text">
+         <string>MSISDN / Destination</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="editMsisdn">
+        <property name="placeholderText">
+         <string>subscriber number / address</string>
+        </property>
+       </widget>
+      </item>
+
+      <item row="2" column="0" colspan="2">
+       <widget class="QLabel" name="labelPayload">
+        <property name="text">
+         <string>SMS User Data / Notes</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0" colspan="2">
+       <widget class="QPlainTextEdit" name="plainSmsPayload">
+        <property name="placeholderText">
+         <string>Enter SMS TPDU notes, MAP payload notes, or CAP-specific parameter hints here...</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+
+   <item>
+    <layout class="QHBoxLayout" name="footerLayout">
+     <item>
+      <widget class="QPushButton" name="btnValidateTcap">
+       <property name="text">
+        <string>Validate</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnPreviewTcap">
+       <property name="text">
+        <string>Preview Structure</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnPreviewHexTcap">
+       <property name="text">
+        <string>Preview Hex</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="horizontalSpacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QPushButton" name="btnGenerateTcap">
+       <property name="minimumSize">
+        <size>
+         <width>140</width>
+         <height>40</height>
+        </size>
+       </property>
+       <property name="text">
+        <string>GENERATE TCAP</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
+
