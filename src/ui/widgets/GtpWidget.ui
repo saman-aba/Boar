@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>GtpWidget</class>
+ <widget class="QWidget" name="GtpWidget">
+  <layout class="QFormLayout" name="formLayout">
+   <item row="0" column="0">
+    <widget class="QLabel" name="teidLabel">
+     <property name="text">
+      <string>TEID</string>
+     </property>
+    </widget>
+   </item>
+   <item row="0" column="1">
+    <widget class="QLineEdit" name="teidLineEdit"/>
+   </item>
+   <item row="1" column="0">
+    <widget class="QLabel" name="messageTypeLabel">
+     <property name="text">
+      <string>Message Type</string>
+     </property>
+    </widget>
+   </item>
+   <item row="1" column="1">
+    <widget class="QLineEdit" name="messageTypeLineEdit"/>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
