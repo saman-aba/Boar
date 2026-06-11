@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PacketGeneratorWindow</class>
+ <widget class="QWidget" name="PacketGeneratorWindow">
+  <property name="geometry"><rect><x>0</x><y>0</y><width>1100</width><height>850</height></rect></property>
+  <property name="windowTitle"><string>Protocol Packet Crafting Lab</string></property>
+  <property name="styleSheet">
+   <string notr="true">
+    QWidget { background: #1e2227; color: #abb2bf; font-family: "Segoe UI"; }
+    #headerArea { background: #282c34; border-bottom: 1px solid #3e4451; }
+    #footerArea { background: #21252b; border-top: 1px solid #3e4451; }
+    QLabel#lblTitle { font-size: 16px; font-weight: bold; color: #61afef; }
+    QComboBox { background: #323842; border: 1px solid #4b5263; padding: 5px; border-radius: 3px; }
+    QPushButton#btnSend { background: #98c379; color: #1e2227; font-weight: bold; border-radius: 4px; }
+    QPushButton#btnSend:hover { background: #abe08b; }
+   </string>
+  </property>
+  
+  <layout class="QVBoxLayout" name="mainLayout">
+   <property name="spacing"><number>0</number></property>
+   <property name="leftMargin"><number>0</number></property>
+   <property name="topMargin"><number>0</number></property>
+   <property name="rightMargin"><number>0</number></property>
+   <property name="bottomMargin"><number>0</number></property>
+   
+   <!-- HEADER: Protocol Selection -->
+   <item>
+    <widget class="QFrame" name="headerArea">
+     <layout class="QHBoxLayout" name="headerLayout">
+      <item>
+       <widget class="QLabel" name="lblTitle"><property name="text"><string>PACKET GENERATOR</string></property></widget>
+      </item>
+      <item><spacer><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+      <item>
+       <widget class="QLabel" name="label"><property name="text"><string>Protocol:</string></property></widget>
+      </item>
+      <item>
+       <widget class="QComboBox" name="comboProtocolSelector">
+        <property name="minimumSize"><size><width>150</width><height>0</height></size></property>
+        <item><property name="text"><string>Diameter</string></property></item>
+        <item><property name="text"><string>GTPv2</string></property></item>
+        <item><property name="text"><string>TCAP / MAP / CAP</string></property></item>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+
+   <!-- CENTRAL: The Stacked Workspace -->
+   <item>
+    <widget class="QStackedWidget" name="protocolStack">
+     <property name="currentIndex"><number>0</number></property>
+     <!-- Widgets will be added here via C++ -->
+    </widget>
+   </item>
+
+   <!-- FOOTER: Common Actions -->
+   <item>
+    <widget class="QFrame" name="footerArea">
+     <layout class="QHBoxLayout" name="footerLayout">
+      <item>
+       <widget class="QPushButton" name="btnLoadPcap"><property name="text"><string>Load Template</string></property></widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnSaveTemplate"><property name="text"><string>Save As Template</string></property></widget>
+      </item>
+      <item><spacer><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+      <item>
+       <widget class="QPushButton" name="btnValidate"><property name="text"><string>Run Validation</string></property></widget>
+      </item>
+      <item>
+       <widget class="QPushButton" name="btnSend">
+        <property name="minimumSize"><size><width>120</width><height>35</height></size></property>
+        <property name="text"><string>INJECT PACKET</string></property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+</ui>
+
