@@ -3,9 +3,9 @@
 #include <QComboBox>
 #include <QPushButton>
 
-#include "diameterwidget.h"
-#include "gtpwidget.h"
-#include "tcapwidget.h"
+#include "../widgets/diameterwidget.h"
+#include "../widgets/gtpwidget.h"
+#include "../widgets/tcapwidget.h"
 #include "ui_NewPacketDialog.h"
 
 NewPacketDialog::NewPacketDialog(QWidget *parent)
@@ -13,7 +13,13 @@ NewPacketDialog::NewPacketDialog(QWidget *parent)
 	, ui_(std::make_unique<Ui::NewPacketDialog>())
 {
 	ui_->setupUi(this);
-	ui_->protocolComboBox->addItems({QStringLiteral("Diameter"), QStringLiteral("TCAP"), QStringLiteral("GTP")});
+	ui_->protocolComboBox->addItems(
+		{
+			QStringLiteral("Diameter"),
+			QStringLiteral("TCAP"),
+			QStringLiteral("GTP")
+		}
+	);
 	auto *diameterWidget = new DiameterWidget(this);
 	auto *tcapWidget = new TcapWidget(this);
 	auto *gtpWidget = new GtpWidget(this);
