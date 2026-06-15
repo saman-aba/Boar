@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DatabaseModuleWidget</class>
+ <widget class="QWidget" name="DatabaseModuleWidget">
+  <layout class="QVBoxLayout" name="verticalLayoutDatabase">
+   <item><widget class="QGroupBox" name="groupDbConnection"><property name="title"><string>Database Connection</string></property></widget></item>
+   <item><widget class="QTabWidget" name="tabDatabase"><widget class="QWidget" name="tabDbSubscribers"><attribute name="title"><string>Subscribers</string></attribute></widget><widget class="QWidget" name="tabDbQuery"><attribute name="title"><string>Query</string></attribute></widget></widget></item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
