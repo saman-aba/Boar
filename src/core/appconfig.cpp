@@ -8,12 +8,6 @@ QString AppConfig::defaultConfigFilePath()
 QJsonObject AppConfig::toJson() const
 {
 	QJsonObject uiObject;
-	uiObject.insert(QStringLiteral("windowTitle"), windowTitle);
-	uiObject.insert(QStringLiteral("windowWidth"), windowWidth);
-	uiObject.insert(QStringLiteral("windowHeight"), windowHeight);
-	uiObject.insert(QStringLiteral("payloadBoxMinHeight"), payloadBoxMinHeight);
-	uiObject.insert(QStringLiteral("sendButtonWidth"), sendButtonWidth);
-
 	QJsonObject networkObject;
 	networkObject.insert(QStringLiteral("host"), host);
 	networkObject.insert(QStringLiteral("port"), port);
@@ -41,11 +35,6 @@ AppConfig AppConfig::fromJson(const QJsonObject &rootObject)
 	const QJsonObject appearanceObject = rootObject.value(QStringLiteral("appearance")).toObject();
 	const QJsonObject coreObject = rootObject.value(QStringLiteral("core")).toObject();
 
-	config.windowTitle = uiObject.value(QStringLiteral("windowTitle")).toString(config.windowTitle);
-	config.windowWidth = uiObject.value(QStringLiteral("windowWidth")).toInt(config.windowWidth);
-	config.windowHeight = uiObject.value(QStringLiteral("windowHeight")).toInt(config.windowHeight);
-	config.payloadBoxMinHeight = uiObject.value(QStringLiteral("payloadBoxMinHeight")).toInt(config.payloadBoxMinHeight);
-	config.sendButtonWidth = uiObject.value(QStringLiteral("sendButtonWidth")).toInt(config.sendButtonWidth);
 	config.host = networkObject.value(QStringLiteral("host")).toString(config.host);
 	config.port = networkObject.value(QStringLiteral("port")).toInt(config.port);
 	config.theme = appearanceObject.value(QStringLiteral("theme")).toString(config.theme);

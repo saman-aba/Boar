@@ -4,17 +4,21 @@ add_library(libboar STATIC
 )
 target_include_directories(libboar PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
+	${CMAKE_CURRENT_SOURCE_DIR}/..
+	${JANSSON_INCLUDE_DIRS}
 )
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JANSSON REQUIRED jansson)
+
 target_link_libraries(libboar PUBLIC
 	Qt6::Core
+	${JANSSON_LIBRARIES}
 )
 
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/diameter.c AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/diameter.h AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/avp.h AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../common.h AND EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/../val-str.h)
-	target_sources(libboar PRIVATE
-		${CMAKE_CURRENT_SOURCE_DIR}/diameter.c
-		${CMAKE_CURRENT_SOURCE_DIR}/diameter.h
-	)
-	target_include_directories(libboar PUBLIC
-		${CMAKE_CURRENT_SOURCE_DIR}/..
-	)
-endif()
+target_sources(libboar PRIVATE
+	${CMAKE_CURRENT_SOURCE_DIR}/diameter.c
+	${CMAKE_CURRENT_SOURCE_DIR}/diameter.h
+)
+target_include_directories(libboar PUBLIC
+	${CMAKE_CURRENT_SOURCE_DIR}/..
+)

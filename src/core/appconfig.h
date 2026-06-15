@@ -10,10 +10,7 @@
 struct AppConfig
 {
 	QString windowTitle {QStringLiteral("Boar")};
-	int windowWidth {800};
-	int windowHeight {600};
-	int payloadBoxMinHeight {160};
-	int sendButtonWidth {120};
+
 	QString lastPayload {};
 	QString host {QStringLiteral("127.0.0.1")};
 	int port {8080};
