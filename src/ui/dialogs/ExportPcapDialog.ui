@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>ExportPcapDialog</class>
+ <widget class="QDialog" name="ExportPcapDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>720</width>
+    <height>760</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Export PCAP</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QGroupBox" name="groupDatalink">
+     <property name="title"><string>Datalink</string></property>
+     <layout class="QFormLayout" name="datalinkLayout">
+      <item row="0" column="0"><widget class="QLabel" name="labelSrcMac"><property name="text"><string>Source MAC</string></property></widget></item>
+      <item row="0" column="1"><widget class="QLineEdit" name="editSourceMac"><property name="placeholderText"><string>00 11 22 33 44 55</string></property></widget></item>
+      <item row="1" column="0"><widget class="QLabel" name="labelDstMac"><property name="text"><string>Destination MAC</string></property></widget></item>
+      <item row="1" column="1"><widget class="QLineEdit" name="editDestinationMac"><property name="placeholderText"><string>AA BB CC DD EE FF</string></property></widget></item>
+      <item row="2" column="0"><widget class="QLabel" name="labelEtherType"><property name="text"><string>Ethernet Type</string></property></widget></item>
+      <item row="2" column="1"><widget class="QComboBox" name="comboEtherType"><item><property name="text"><string>IPv4 (0x0800)</string></property></item><item><property name="text"><string>802.1Q VLAN (0x8100)</string></property></item></widget></item>
+      <item row="3" column="0"><widget class="QLabel" name="labelVlanId"><property name="text"><string>VLAN ID</string></property></widget></item>
+      <item row="3" column="1"><widget class="QSpinBox" name="spinVlanId"><property name="maximum"><number>4095</number></property></widget></item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupNetwork">
+     <property name="title"><string>Network</string></property>
+     <layout class="QFormLayout" name="networkLayout">
+      <item row="0" column="0"><widget class="QLabel" name="labelIpVersion"><property name="text"><string>Version</string></property></widget></item>
+      <item row="0" column="1"><widget class="QComboBox" name="comboIpVersion"><item><property name="text"><string>IPv4</string></property></item></widget></item>
+      <item row="1" column="0"><widget class="QLabel" name="labelHeaderSize"><property name="text"><string>Header Size</string></property></widget></item>
+      <item row="1" column="1"><widget class="QSpinBox" name="spinHeaderSize"><property name="minimum"><number>5</number></property><property name="maximum"><number>15</number></property><property name="value"><number>5</number></property></widget></item>
+      <item row="2" column="0"><widget class="QLabel" name="labelDsf"><property name="text"><string>DSF</string></property></widget></item>
+      <item row="2" column="1"><widget class="QSpinBox" name="spinDsf"><property name="maximum"><number>255</number></property></widget></item>
+      <item row="3" column="0"><widget class="QLabel" name="labelPayloadSize"><property name="text"><string>Payload Size</string></property></widget></item>
+      <item row="3" column="1"><widget class="QSpinBox" name="spinPayloadSize"><property name="maximum"><number>65535</number></property></widget></item>
+      <item row="4" column="0"><widget class="QLabel" name="labelFlags"><property name="text"><string>Flags</string></property></widget></item>
+      <item row="4" column="1"><widget class="QLineEdit" name="editIpFlags"/></item>
+      <item row="5" column="0"><widget class="QLabel" name="labelSourceAddress"><property name="text"><string>Source Address</string></property></widget></item>
+      <item row="5" column="1"><widget class="QLineEdit" name="editSourceAddress"><property name="placeholderText"><string>192.0.2.1</string></property></widget></item>
+      <item row="6" column="0"><widget class="QLabel" name="labelDestinationAddress"><property name="text"><string>Destination Address</string></property></widget></item>
+      <item row="6" column="1"><widget class="QLineEdit" name="editDestinationAddress"><property name="placeholderText"><string>198.51.100.10</string></property></widget></item>
+      <item row="7" column="0"><widget class="QLabel" name="labelTransportProtocol"><property name="text"><string>Protocol</string></property></widget></item>
+      <item row="7" column="1"><widget class="QComboBox" name="comboTransportProtocol"><item><property name="text"><string>UDP</string></property></item><item><property name="text"><string>TCP</string></property></item><item><property name="text"><string>SCTP</string></property></item></widget></item>
+      <item row="8" column="0"><widget class="QLabel" name="labelTtl"><property name="text"><string>TTL</string></property></widget></item>
+      <item row="8" column="1"><widget class="QSpinBox" name="spinTtl"><property name="maximum"><number>255</number></property><property name="value"><number>64</number></property></widget></item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupTransport">
+     <property name="title"><string>Transport</string></property>
+     <layout class="QVBoxLayout" name="transportLayout">
+      <item>
+       <widget class="QStackedWidget" name="stackTransportProtocol">
+        <widget class="QWidget" name="pageUdp">
+         <layout class="QFormLayout" name="udpLayout">
+          <item row="0" column="0"><widget class="QLabel" name="labelUdpSrc"><property name="text"><string>Source Port</string></property></widget></item>
+          <item row="0" column="1"><widget class="QSpinBox" name="spinUdpSrcPort"><property name="maximum"><number>65535</number></property></widget></item>
+          <item row="1" column="0"><widget class="QLabel" name="labelUdpDst"><property name="text"><string>Destination Port</string></property></widget></item>
+          <item row="1" column="1"><widget class="QSpinBox" name="spinUdpDstPort"><property name="maximum"><number>65535</number></property></widget></item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="pageTcp">
+         <layout class="QFormLayout" name="tcpLayout">
+          <item row="0" column="0"><widget class="QLabel" name="labelTcpSrc"><property name="text"><string>Source Port</string></property></widget></item>
+          <item row="0" column="1"><widget class="QSpinBox" name="spinTcpSrcPort"><property name="maximum"><number>65535</number></property></widget></item>
+          <item row="1" column="0"><widget class="QLabel" name="labelTcpDst"><property name="text"><string>Destination Port</string></property></widget></item>
+          <item row="1" column="1"><widget class="QSpinBox" name="spinTcpDstPort"><property name="maximum"><number>65535</number></property></widget></item>
+          <item row="2" column="0"><widget class="QLabel" name="labelTcpSeq"><property name="text"><string>Sequence Number</string></property></widget></item>
+          <item row="2" column="1"><widget class="QLineEdit" name="editTcpSequence"/></item>
+         </layout>
+        </widget>
+        <widget class="QWidget" name="pageSctp">
+         <layout class="QFormLayout" name="sctpHeaderLayout">
+          <item row="0" column="0"><widget class="QLabel" name="labelSctpSrc"><property name="text"><string>Source Port</string></property></widget></item>
+          <item row="0" column="1"><widget class="QSpinBox" name="spinSctpSrcPort"><property name="maximum"><number>65535</number></property></widget></item>
+          <item row="1" column="0"><widget class="QLabel" name="labelSctpDst"><property name="text"><string>Destination Port</string></property></widget></item>
+          <item row="1" column="1"><widget class="QSpinBox" name="spinSctpDstPort"><property name="maximum"><number>65535</number></property></widget></item>
+          <item row="2" column="0"><widget class="QLabel" name="labelVerificationTag"><property name="text"><string>Verification Tag</string></property></widget></item>
+          <item row="2" column="1"><widget class="QLineEdit" name="editVerificationTag"/></item>
+          <item row="3" column="0"><widget class="QLabel" name="labelSctpChunkType"><property name="text"><string>Chunk Type</string></property></widget></item>
+          <item row="3" column="1"><widget class="QComboBox" name="comboSctpChunkType"><item><property name="text"><string>DATA</string></property></item><item><property name="text"><string>INIT</string></property></item><item><property name="text"><string>INIT ACK</string></property></item><item><property name="text"><string>SACK</string></property></item><item><property name="text"><string>HEARTBEAT</string></property></item><item><property name="text"><string>HEARTBEAT ACK</string></property></item><item><property name="text"><string>ABORT</string></property></item><item><property name="text"><string>SHUTDOWN</string></property></item><item><property name="text"><string>SHUTDOWN ACK</string></property></item><item><property name="text"><string>ERROR</string></property></item><item><property name="text"><string>COOKIE ECHO</string></property></item><item><property name="text"><string>COOKIE ACK</string></property></item><item><property name="text"><string>ECNE</string></property></item><item><property name="text"><string>CWR</string></property></item><item><property name="text"><string>SHUTDOWN COMPLETE</string></property></item></widget></item>
+         </layout>
+         <layout class="QFormLayout" name="sctpDataLayout">
+          <item row="0" column="0"><widget class="QLabel" name="labelSctpFlags"><property name="text"><string>Flags</string></property></widget></item>
+          <item row="0" column="1"><layout class="QHBoxLayout" name="sctpFlagsLayout"><item><widget class="QRadioButton" name="radioSctpFlagI"><property name="text"><string>I</string></property></widget></item><item><widget class="QRadioButton" name="radioSctpFlagU"><property name="text"><string>U</string></property></widget></item><item><widget class="QRadioButton" name="radioSctpFlagB"><property name="text"><string>B</string></property></widget></item><item><widget class="QRadioButton" name="radioSctpFlagE"><property name="text"><string>E</string></property></widget></item></layout></item>
+          <item row="1" column="0"><widget class="QLabel" name="labelSctpTsn"><property name="text"><string>TSN</string></property></widget></item>
+          <item row="1" column="1"><widget class="QLineEdit" name="editSctpTsn"/></item>
+          <item row="2" column="0"><widget class="QLabel" name="labelSctpStreamIdentifier"><property name="text"><string>Stream Identifier</string></property></widget></item>
+          <item row="2" column="1"><widget class="QSpinBox" name="spinSctpStreamIdentifier"><property name="maximum"><number>65535</number></property></widget></item>
+          <item row="3" column="0"><widget class="QLabel" name="labelSctpSsn"><property name="text"><string>SSN</string></property></widget></item>
+          <item row="3" column="1"><widget class="QSpinBox" name="spinSctpSsn"><property name="maximum"><number>65535</number></property></widget></item>
+          <item row="4" column="0"><widget class="QLabel" name="labelSctpPpid"><property name="text"><string>PPID</string></property></widget></item>
+          <item row="4" column="1"><widget class="QLineEdit" name="editSctpPpid"/></item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+      <item>
+       <layout class="QHBoxLayout" name="exportDirLayout">
+        <item><widget class="QLabel" name="labelExportDir"><property name="text"><string>Export Directory</string></property></widget></item>
+        <item><widget class="QLineEdit" name="editExportDirectory"/></item>
+        <item><widget class="QPushButton" name="btnBrowseDirectory"><property name="text"><string>Browse</string></property></widget></item>
+       </layout>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="buttonLayout">
+     <item><spacer name="horizontalSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+     <item><widget class="QPushButton" name="btnCancel"><property name="text"><string>Cancel</string></property></widget></item>
+     <item><widget class="QPushButton" name="btnExport"><property name="text"><string>Export</string></property></widget></item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

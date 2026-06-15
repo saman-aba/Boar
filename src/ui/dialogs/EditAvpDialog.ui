@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>EditAvpDialog</class>
+ <widget class="QDialog" name="EditAvpDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>520</width>
+    <height>420</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Edit AVP</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <layout class="QFormLayout" name="formLayout">
+     <item row="0" column="0"><widget class="QLabel" name="labelAvpName"><property name="text"><string>AVP Name</string></property></widget></item>
+     <item row="0" column="1"><widget class="QLineEdit" name="editAvpName"/></item>
+     <item row="1" column="0"><widget class="QLabel" name="labelAvpCode"><property name="text"><string>AVP Code</string></property></widget></item>
+     <item row="1" column="1"><widget class="QSpinBox" name="spinAvpCode"><property name="maximum"><number>2147483647</number></property></widget></item>
+     <item row="2" column="0"><widget class="QLabel" name="labelAvpType"><property name="text"><string>AVP Type</string></property></widget></item>
+     <item row="2" column="1"><widget class="QComboBox" name="comboAvpType"/></item>
+     <item row="3" column="0"><widget class="QLabel" name="labelDerivedType"><property name="text"><string>Derived Type</string></property></widget></item>
+     <item row="3" column="1"><widget class="QComboBox" name="comboDerivedType"/></item>
+     <item row="4" column="0"><widget class="QLabel" name="labelFlags"><property name="text"><string>Flags</string></property></widget></item>
+     <item row="4" column="1">
+      <layout class="QHBoxLayout" name="flagsRowLayout">
+       <item><widget class="QCheckBox" name="checkVendor"><property name="text"><string>V</string></property></widget></item>
+       <item><widget class="QCheckBox" name="checkMandatory"><property name="text"><string>M</string></property></widget></item>
+       <item><widget class="QCheckBox" name="checkProtected"><property name="text"><string>P</string></property></widget></item>
+      </layout>
+     </item>
+     <item row="5" column="0"><widget class="QLabel" name="labelAvpValue"><property name="text"><string>Value</string></property></widget></item>
+     <item row="5" column="1"><widget class="QLineEdit" name="editAvpValue"/></item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QGroupBox" name="groupChildAvps">
+     <property name="title"><string>Child AVPs</string></property>
+     <layout class="QVBoxLayout" name="childLayout">
+      <item>
+       <layout class="QHBoxLayout" name="childButtonsLayout">
+        <item><widget class="QPushButton" name="btnAddChildAvp"><property name="text"><string>Add Child AVP</string></property></widget></item>
+        <item><widget class="QPushButton" name="btnRemoveChildAvp"><property name="text"><string>Remove Child AVP</string></property></widget></item>
+       </layout>
+      </item>
+      <item><widget class="QTreeWidget" name="treeChildAvps"><column><property name="text"><string>Name</string></property></column><column><property name="text"><string>Code</string></property></column><column><property name="text"><string>V</string></property></column><column><property name="text"><string>M</string></property></column><column><property name="text"><string>P</string></property></column><column><property name="text"><string>Value</string></property></column></widget></item>
+     </layout>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="buttonLayout">
+     <item><spacer name="horizontalSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property></spacer></item>
+     <item><widget class="QPushButton" name="btnCancel"><property name="text"><string>Cancel</string></property></widget></item>
+     <item><widget class="QPushButton" name="btnSave"><property name="text"><string>Save</string></property></widget></item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

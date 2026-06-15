@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>AnalyzerModuleWidget</class>
+ <widget class="QWidget" name="AnalyzerModuleWidget">
+  <layout class="QVBoxLayout" name="verticalLayoutAnalyzer">
+   <item><widget class="QGroupBox" name="groupAnalyzerControls"><property name="title"><string>Analyzer Controls</string></property></widget></item>
+   <item><widget class="QTableWidget" name="tableCapturedPackets"/></item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
