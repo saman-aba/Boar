@@ -1,0 +1,291 @@
+#include "packeteditormodulewidget.h"
+
+#include <QComboBox>
+#include <QDir>
+#include <QFile>
+#include <QFileDialog>
+#include <QFileInfo>
+#include <QFontDatabase>
+#include <QHeaderView>
+#include <QMainWindow>
+#include <QStatusBar>
+#include <QPushButton>
+#include <QSignalBlocker>
+#include <QTableWidget>
+#include <QTableWidgetItem>
+
+#include "../dialogs/exportpcapdialog.h"
+#include "diametereditorwidget.h"
+#include "tcapeditorwidget.h"
+#include "ui_PacketEditorModuleWidget.h"
+
+PacketEditorModuleWidget::PacketEditorModuleWidget(QWidget *parent)
+	: QWidget(parent)
+	, ui_(std::make_unique<Ui::PacketEditorModuleWidget>())
+	, diameterEditorWidget_(std::make_unique<DiameterEditorWidget>(this))
+	, tcapEditorWidget_(std::make_unique<TcapEditorWidget>(this))
+{
+	ui_->setupUi(this);
+	if (ui_->tableHexEditor) {
+		QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+		font.setFixedPitch(true);
+		font.setKerning(false);
+		font.setPointSize(10);
+		ui_->tableHexEditor->setFont(font);
+		ui_->tableHexEditor->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+		ui_->tableHexEditor->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
+		ui_->tableHexEditor->verticalHeader()->setDefaultSectionSize(20);
+		ui_->tableHexEditor->horizontalHeader()->setDefaultSectionSize(24);
+		ui_->tableHexEditor->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+		ui_->tableHexEditor->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+		ui_->tableHexEditor->setSelectionMode(QAbstractItemView::SingleSelection);
+		ui_->tableHexEditor->setSelectionBehavior(QAbstractItemView::SelectItems);
+		ui_->tableHexEditor->setAlternatingRowColors(false);
+	}
+	ui_->protocolStack->addWidget(diameterEditorWidget_.get());
+	ui_->protocolStack->addWidget(new QWidget(this));
+	ui_->protocolStack->addWidget(tcapEditorWidget_.get());
+	if (ui_->splitterContent) {
+		ui_->splitterContent->setChildrenCollapsible(false);
+		ui_->splitterContent->setStretchFactor(0, 3);
+		ui_->splitterContent->setStretchFactor(1, 1);
+		ui_->splitterContent->setSizes({720, 240});
+	}
+	diameterEditorWidget_->setOnTemplateChanged([this](const QByteArray &buffer) {
+		if (syncingHexView_) {
+			return;
+		}
+		currentPacketBytes_ = buffer;
+		syncHexEditorFromBuffer();
+	});
+	connect(ui_->comboProtocolSelector, &QComboBox::currentIndexChanged, this, [this](int index) {
+		ui_->protocolStack->setCurrentIndex(index);
+	});
+	if (ui_->btnLoadPcap) {
+		connect(ui_->btnLoadPcap, &QPushButton::clicked, this, [this]() {
+			loadHexFromFile();
+			if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 0) {
+				diameterEditorWidget_->openTemplateFileDialog();
+				const QByteArray loadedBuffer = diameterEditorWidget_->loadedTemplateBuffer();
+				if (!loadedBuffer.isEmpty()) {
+					currentPacketBytes_ = loadedBuffer;
+					syncHexEditorFromBuffer();
+				}
+			}
+		});
+	}
+	if (ui_->btnExportPcap) {
+		connect(ui_->btnExportPcap, &QPushButton::clicked, this, [this]() {
+			exportPcap();
+		});
+	}
+	if (ui_->btnSaveCurrentTemplate) {
+		connect(ui_->btnSaveCurrentTemplate, &QPushButton::clicked, this, [this]() {
+			saveTemplate();
+		});
+	}
+	if (ui_->btnSaveTemplate) {
+		connect(ui_->btnSaveTemplate, &QPushButton::clicked, this, [this]() {
+			saveTemplateAs();
+		});
+	}
+	if (ui_->btnValidate) {
+		connect(ui_->btnValidate, &QPushButton::clicked, this, [this]() {
+			validateHexEditor();
+		});
+	}
+	if (ui_->btnCloseTemplate) {
+		connect(ui_->btnCloseTemplate, &QPushButton::clicked, this, [this]() {
+			closeCurrentTemplate();
+		});
+	}
+	if (ui_->tableHexEditor) {
+		connect(ui_->tableHexEditor, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *) {
+			if (syncingHexView_) {
+				return;
+			}
+			currentPacketBytes_ = parseHexEditorText();
+			applyHexEditorToActiveProtocol();
+		});
+	}
+}
+
+void PacketEditorModuleWidget::loadHexFromFile()
+{
+	currentPacketBytes_ = parseHexEditorText();
+}
+
+void PacketEditorModuleWidget::syncHexEditorFromBuffer()
+{
+	if (!ui_->tableHexEditor) {
+		return;
+	}
+	syncingHexView_ = true;
+	const QSignalBlocker blocker(ui_->tableHexEditor);
+	populateHexTable(currentPacketBytes_);
+	syncingHexView_ = false;
+}
+
+void PacketEditorModuleWidget::exportPcap()
+{
+	const QByteArray packetBytes = parseHexEditorText();
+	if (packetBytes.isEmpty()) {
+		return;
+	}
+	if (packetBytes.isEmpty()) {
+		return;
+	}
+	ExportPcapDialog dialog(this);
+	if (dialog.exec() != QDialog::Accepted) {
+		return;
+	}
+	const QString exportDirectory = dialog.exportDirectory();
+	if (exportDirectory.isEmpty()) {
+		return;
+	}
+	QFile file(QDir(exportDirectory).filePath(QStringLiteral("packet.pcap")));
+	if (!file.open(QIODevice::WriteOnly)) {
+		return;
+	}
+	QByteArray pcapData;
+	pcapData.append(QByteArray::fromHex("D4C3B2A1020004000000000000000000FFFF000001000000"));
+	const quint32 capturedLength = static_cast<quint32>(packetBytes.size());
+	auto appendLe32 = [&pcapData](quint32 value) {
+		pcapData.append(static_cast<char>(value & 0xFF));
+		pcapData.append(static_cast<char>((value >> 8) & 0xFF));
+		pcapData.append(static_cast<char>((value >> 16) & 0xFF));
+		pcapData.append(static_cast<char>((value >> 24) & 0xFF));
+	};
+	appendLe32(0);
+	appendLe32(0);
+	appendLe32(capturedLength);
+	appendLe32(capturedLength);
+	pcapData.append(packetBytes);
+	file.write(pcapData);
+}
+
+PacketEditorModuleWidget::~PacketEditorModuleWidget() = default;
+
+void PacketEditorModuleWidget::populateHexTable(const QByteArray &bytes)
+{
+	if (!ui_->tableHexEditor) {
+		return;
+	}
+	const int rowCount = (bytes.size() + 7) / 8;
+	ui_->tableHexEditor->clearContents();
+	ui_->tableHexEditor->setRowCount(rowCount);
+	for (int row = 0; row < rowCount; ++row) {
+		ui_->tableHexEditor->setVerticalHeaderItem(row, new QTableWidgetItem(QStringLiteral("%1").arg(row * 8, 4, 16, QChar::fromLatin1('0')).toUpper()));
+		for (int column = 0; column < 8; ++column) {
+			const int index = row * 8 + column;
+			auto *item = new QTableWidgetItem(index < bytes.size()
+				? QStringLiteral("%1").arg(static_cast<unsigned char>(bytes.at(index)), 2, 16, QChar::fromLatin1('0')).toUpper()
+				: QString());
+			item->setTextAlignment(Qt::AlignCenter);
+			ui_->tableHexEditor->setItem(row, column, item);
+		}
+	}
+}
+
+QByteArray PacketEditorModuleWidget::parseHexEditorText() const
+{
+	if (!ui_->tableHexEditor) {
+		return {};
+	}
+	QByteArray bytes;
+	for (int row = 0; row < ui_->tableHexEditor->rowCount(); ++row) {
+		for (int column = 0; column < ui_->tableHexEditor->columnCount(); ++column) {
+			const auto *item = ui_->tableHexEditor->item(row, column);
+			if (!item) {
+				continue;
+			}
+			const QString text = item->text().trimmed().toUpper();
+			if (text.isEmpty()) {
+				continue;
+			}
+			const QByteArray cell = QByteArray::fromHex(text.toUtf8());
+			if (cell.size() == 1) {
+				bytes.append(cell);
+			}
+		}
+	}
+	return bytes;
+}
+
+void PacketEditorModuleWidget::validateHexEditor()
+{
+	currentPacketBytes_ = parseHexEditorText();
+	syncHexEditorFromBuffer();
+}
+
+void PacketEditorModuleWidget::applyHexEditorToActiveProtocol()
+{
+	if (!ui_->comboProtocolSelector) {
+		return;
+	}
+	if (ui_->comboProtocolSelector->currentIndex() == 0) {
+		diameterEditorWidget_->setTemplateBuffer(currentPacketBytes_);
+	}
+}
+
+void PacketEditorModuleWidget::saveTemplate()
+{
+	if (!ui_->comboProtocolSelector || ui_->comboProtocolSelector->currentIndex() != 0) {
+		return;
+	}
+	if (diameterEditorWidget_->saveTemplate()) {
+		currentPacketBytes_ = diameterEditorWidget_->currentTemplateBuffer();
+		syncHexEditorFromBuffer();
+		showStatusMessage(QStringLiteral("Template saved"));
+		return;
+	}
+	showStatusMessage(QStringLiteral("No current template path. Use Save As Template."));
+}
+
+void PacketEditorModuleWidget::saveTemplateAs()
+{
+	if (!ui_->comboProtocolSelector || ui_->comboProtocolSelector->currentIndex() != 0) {
+		return;
+	}
+	const QString filePath = QFileDialog::getSaveFileName(this,
+		QStringLiteral("Save Diameter Template"),
+		diameterEditorWidget_->currentTemplatePath(),
+		QStringLiteral("JSON Templates (*.json);;All Files (*)"));
+	if (filePath.isEmpty()) {
+		showStatusMessage(QStringLiteral("Template name is required"));
+		return;
+	}
+	if (QFileInfo(filePath).fileName().isEmpty()) {
+		showStatusMessage(QStringLiteral("Template name is required"));
+		return;
+	}
+	if (!diameterEditorWidget_->saveTemplateAs(filePath)) {
+		showStatusMessage(QStringLiteral("Failed to save template"));
+		return;
+	}
+	currentPacketBytes_ = diameterEditorWidget_->currentTemplateBuffer();
+	syncHexEditorFromBuffer();
+	showStatusMessage(QStringLiteral("Template saved"));
+}
+
+void PacketEditorModuleWidget::closeCurrentTemplate()
+{
+	currentPacketBytes_.clear();
+	if (ui_->tableHexEditor) {
+		const QSignalBlocker blocker(ui_->tableHexEditor);
+		ui_->tableHexEditor->clearContents();
+		ui_->tableHexEditor->setRowCount(0);
+	}
+	if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 0) {
+		diameterEditorWidget_->clearTemplate();
+	}
+}
+
+void PacketEditorModuleWidget::showStatusMessage(const QString &message) const
+{
+	if (auto *mainWindow = qobject_cast<QMainWindow *>(this->window())) {
+		if (mainWindow->statusBar()) {
+			mainWindow->statusBar()->showMessage(message, 3000);
+		}
+	}
+}
