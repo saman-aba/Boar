@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>DiameterEditorWidget</class>
+ <widget class="QWidget" name="DiameterEditorWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>800</width>
+    <height>600</height>
+   </rect>
+  </property>
+  <layout class="QVBoxLayout" name="mainLayout">
+   <item>
+    <widget class="QScrollArea" name="scrollAreaDiameter">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContentsDiameter">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>780</width>
+        <height>580</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="contentLayoutDiameter">
+       <item>
+        <widget class="QGroupBox" name="groupHeader">
+         <property name="title">
+          <string>Diameter Base Header</string>
+         </property>
+         <layout class="QGridLayout" name="headerGridLayout">
+          <property name="horizontalSpacing">
+           <number>6</number>
+          </property>
+          <property name="verticalSpacing">
+           <number>4</number>
+          </property>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="editAppId"/>
+          </item>
+          <item row="2" column="2">
+           <widget class="QLabel" name="labelEndToEndId">
+            <property name="text">
+             <string>End-to-End ID</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="2">
+           <widget class="QLabel" name="labelCommand">
+            <property name="text">
+             <string>Command Code</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="1">
+           <widget class="QLineEdit" name="editHopByHopId"/>
+          </item>
+          <item row="0" column="0">
+           <widget class="QLabel" name="labelAppId">
+            <property name="text">
+             <string>Application ID</string>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="0">
+           <widget class="QLabel" name="labelHopByHopId">
+            <property name="text">
+             <string>Hop-by-Hop ID</string>
+            </property>
+           </widget>
+          </item>
+          <item row="0" column="3">
+           <widget class="QComboBox" name="comboCommand">
+            <property name="minimumSize">
+             <size>
+              <width>170</width>
+              <height>0</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item row="2" column="3">
+           <widget class="QLineEdit" name="editEndToEndId"/>
+          </item>
+          <item row="3" column="1">
+           <layout class="QHBoxLayout" name="flagsLayout">
+            <item>
+             <widget class="QCheckBox" name="checkRequest">
+              <property name="text">
+               <string>R (Request)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkProxiable">
+              <property name="text">
+               <string>P (Proxiable)</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="checkError">
+              <property name="text">
+               <string>E (Error)</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="groupAvps">
+         <property name="title">
+          <string>Attribute Value Pairs (AVPs)</string>
+         </property>
+         <layout class="QVBoxLayout" name="avpLayout">
+          <item>
+           <widget class="QTreeWidget" name="treeAvps">
+            <property name="acceptDrops">
+             <bool>true</bool>
+            </property>
+            <property name="dragEnabled">
+             <bool>true</bool>
+            </property>
+            <property name="dragDropMode">
+             <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+            </property>
+            <property name="defaultDropAction">
+             <enum>Qt::DropAction::MoveAction</enum>
+            </property>
+            <property name="columnCount">
+             <number>6</number>
+            </property>
+            <property name="dropIndicatorShown" stdset="0">
+             <bool>true</bool>
+            </property>
+            <column>
+             <property name="text">
+              <string>AVP Name</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Code</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>V</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>M</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>P</string>
+             </property>
+            </column>
+            <column>
+             <property name="text">
+              <string>Value</string>
+             </property>
+            </column>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="avpActionLayout">
+            <item>
+             <widget class="QPushButton" name="btnAddAvp">
+              <property name="text">
+               <string>+ Add AVP</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnRemoveAvp">
+              <property name="text">
+               <string>- Remove Selected</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="avpSpacer">
+              <property name="orientation">
+               <enum>Qt::Orientation::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnAutoPopulate">
+              <property name="text">
+               <string>Apply Template</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
