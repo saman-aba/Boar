@@ -1,0 +1,43 @@
+QMainWindow {
+    background: #20252b;
+}
+QWidget {
+    color: #d7dde5;
+    background: #20252b;
+    font-family: "Segoe UI";
+    font-size: 10pt;
+}
+QGroupBox {
+    border: 1px solid #3b4652;
+    border-radius: 5px;
+    margin-top: 8px;
+    padding-top: 8px;
+    font-weight: bold;
+    background: #262c33;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 8px;
+    padding: 0 3px 0 3px;
+}
+QMenuBar, QStatusBar, QToolBar {
+    background: #262c33;
+    color: #d7dde5;
+}
+QLabel#titleLabel {
+    font-size: 13pt;
+    font-weight: bold;
+    color: #ffffff;
+}
+QLabel#subtitleLabel {
+    font-size: 9pt;
+    color: #9aa7b5;
+}
+QLabel {
+    background: transparent;
+}
+QPlainTextEdit#logConsole, QPlainTextEdit#traceConsole {
+    background: #111417;
+    color: #d6e2f0;
+    font-family: Consolas, "Courier New", monospace;
+}

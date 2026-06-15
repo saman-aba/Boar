@@ -1,0 +1,9 @@
+QPushButton#btnGenerateTcap {
+    background: #98c379;
+    color: #1e2227;
+    font-weight: bold;
+    border-radius: 4px;
+}
+QPushButton#btnGenerateTcap:hover {
+    background: #abe08b;
+}

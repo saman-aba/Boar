@@ -1,0 +1,30 @@
+#headerArea {
+    background: #282c34;
+    border-bottom: 1px solid #3e4451;
+}
+#footerArea {
+    background: #21252b;
+    border-top: 1px solid #3e4451;
+}
+QLabel#lblTitle {
+    font-size: 16px;
+    font-weight: bold;
+    color: #61afef;
+}
+QPushButton#btnLoadPcap {
+    background: #2f6fed;
+    color: #ffffff;
+    font-weight: bold;
+}
+QPushButton#btnLoadPcap:hover, QPushButton#btnLoadPcap:pressed {
+    background: #5b93ff;
+}
+QPushButton#btnSend {
+    background: #98c379;
+    color: #1e2227;
+    font-weight: bold;
+    border-radius: 4px;
+}
+QPushButton#btnSend:hover {
+    background: #abe08b;
+}
