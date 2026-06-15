@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SettingsModuleWidget</class>
+ <widget class="QWidget" name="SettingsModuleWidget">
+  <layout class="QVBoxLayout" name="verticalLayoutSettings">
+   <item><widget class="QGroupBox" name="groupGeneralSettings"><property name="title"><string>General Settings</string></property></widget></item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
