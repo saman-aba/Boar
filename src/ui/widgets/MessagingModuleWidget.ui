@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>MessagingModuleWidget</class>
+ <widget class="QWidget" name="MessagingModuleWidget">
+  <layout class="QHBoxLayout" name="horizontalLayoutMessaging">
+   <item><widget class="QTreeWidget" name="treeContacts"><column><property name="text"><string>Contacts / Channels</string></property></column></widget></item>
+   <item><widget class="QTextEdit" name="textChatHistory"/></item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
