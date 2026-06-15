@@ -6,72 +6,23 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>980</width>
+    <width>820</width>
     <height>720</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>TCAP / MAP / CAP / SMS Editor</string>
   </property>
-  <property name="styleSheet">
-   <string notr="true">
-    QWidget { background: #20252b; color: #d7dde5; font-family: &quot;Segoe UI&quot;; }
-    QGroupBox {
-        border: 1px solid #3b4652;
-        border-radius: 4px;
-        margin-top: 15px;
-        font-weight: bold;
-    }
-    QGroupBox::title {
-        subcontrol-origin: margin;
-        left: 10px;
-        padding: 0 4px;
-    }
-    QLabel {
-        color: #cfd6df;
-    }
-    QLineEdit, QComboBox, QSpinBox, QTextEdit, QPlainTextEdit {
-        background: #1a1f24;
-        border: 1px solid #3b4652;
-        padding: 4px;
-        color: #ffffff;
-        border-radius: 2px;
-    }
-    QPushButton {
-        background: #2f6fed;
-        border-radius: 3px;
-        padding: 5px 14px;
-        color: white;
-        border: none;
-    }
-    QPushButton:hover {
-        background: #3d7cff;
-    }
-    QPushButton#btnRemoveParam {
-        background: #c0392b;
-    }
-    QPushButton#btnRemoveParam:hover {
-        background: #d44a3a;
-    }
-    QTreeWidget, QTableWidget {
-        background: #1a1f24;
-        border: 1px solid #3b4652;
-        gridline-color: #3b4652;
-    }
-    QHeaderView::section {
-        background: #2b323a;
-        padding: 4px;
-        border: 1px solid #3b4652;
-        color: #d7dde5;
-    }
-    QCheckBox {
-        spacing: 6px;
-    }
-   </string>
-  </property>
   <layout class="QVBoxLayout" name="mainLayout">
    <item>
-    <widget class="QGroupBox" name="groupTransaction">
+    <widget class="QScrollArea" name="scrollAreaTcap">
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContentsTcap">
+      <layout class="QVBoxLayout" name="contentLayoutTcap">
+       <item>
+        <widget class="QGroupBox" name="groupTransaction">
      <property name="title">
       <string>TCAP Transaction</string>
      </property>
@@ -119,14 +70,14 @@
         <item>
          <widget class="QLabel" name="labelDtid">
           <property name="text">
-           <string>Destination TID (DTID)</string>
+           <string>Destination TID</string>
           </property>
          </widget>
         </item>
         <item>
          <widget class="QLineEdit" name="editDtid">
           <property name="placeholderText">
-           <string>optional for Begin / required for Continue/End</string>
+           <string>optional for Begin / needed for Continue-End</string>
           </property>
          </widget>
         </item>
@@ -156,7 +107,7 @@
    <item>
     <widget class="QGroupBox" name="groupApplication">
      <property name="title">
-      <string>Application Family / Operation</string>
+      <string>App Family / Operation</string>
      </property>
      <layout class="QHBoxLayout" name="applicationLayout">
       <item>
@@ -502,7 +453,7 @@
       <item row="0" column="0">
        <widget class="QLabel" name="labelSmsScAddress">
         <property name="text">
-         <string>SMSC Address / Service Center</string>
+         <string>SMSC Address</string>
         </property>
        </widget>
       </item>
@@ -539,7 +490,7 @@
       <item row="3" column="0" colspan="2">
        <widget class="QPlainTextEdit" name="plainSmsPayload">
         <property name="placeholderText">
-         <string>Enter SMS TPDU notes, MAP payload notes, or CAP-specific parameter hints here...</string>
+         <string>Enter SMS TPDU notes or CAP/MAP hints here...</string>
         </property>
        </widget>
       </item>
@@ -581,16 +532,20 @@
       <widget class="QPushButton" name="btnGenerateTcap">
        <property name="minimumSize">
         <size>
-         <width>140</width>
+         <width>110</width>
          <height>40</height>
         </size>
        </property>
        <property name="text">
-        <string>GENERATE TCAP</string>
+        <string>Generate</string>
        </property>
       </widget>
      </item>
     </layout>
+   </item>
+      </layout>
+     </widget>
+    </widget>
    </item>
   </layout>
  </widget>
