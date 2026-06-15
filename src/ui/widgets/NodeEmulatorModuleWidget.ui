@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>NodeEmulatorModuleWidget</class>
+ <widget class="QWidget" name="NodeEmulatorModuleWidget">
+  <layout class="QVBoxLayout" name="verticalLayoutNodeEmulator">
+   <item><widget class="QGroupBox" name="groupNodeConfig"><property name="title"><string>Node Configuration</string></property></widget></item>
+   <item><widget class="QGroupBox" name="groupNodeRuntime"><property name="title"><string>Runtime Control</string></property></widget></item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
