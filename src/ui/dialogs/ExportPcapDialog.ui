@@ -98,8 +98,10 @@
           <item row="2" column="1"><widget class="QSpinBox" name="spinSctpStreamIdentifier"><property name="maximum"><number>65535</number></property></widget></item>
           <item row="3" column="0"><widget class="QLabel" name="labelSctpSsn"><property name="text"><string>SSN</string></property></widget></item>
           <item row="3" column="1"><widget class="QSpinBox" name="spinSctpSsn"><property name="maximum"><number>65535</number></property></widget></item>
-          <item row="4" column="0"><widget class="QLabel" name="labelSctpPpid"><property name="text"><string>PPID</string></property></widget></item>
+          <item row="4" column="0"><widget class="QLabel" name="labelSctpPpid"><property name="text"><string>PPID / M3UA Payload</string></property></widget></item>
           <item row="4" column="1"><widget class="QLineEdit" name="editSctpPpid"/></item>
+          <item row="5" column="0"><widget class="QLabel" name="labelM3uaClass"><property name="text"><string>M3UA / SCCP Stack</string></property></widget></item>
+          <item row="5" column="1"><widget class="QLineEdit" name="editM3uaStack"><property name="placeholderText"><string>M3UA DATA / SCCP UDT</string></property></widget></item>
          </layout>
         </widget>
        </widget>
