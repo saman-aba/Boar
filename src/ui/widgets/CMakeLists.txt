@@ -53,3 +53,6 @@ target_include_directories(qtui_widgets PUBLIC
 target_link_libraries(qtui_widgets PUBLIC
 	Qt6::Widgets
 )
+target_compile_definitions(qtui_widgets PUBLIC
+	BOAR_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)

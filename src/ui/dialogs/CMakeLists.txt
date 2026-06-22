@@ -2,6 +2,7 @@ qt6_wrap_ui(Boar_DIALOG_UI_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/ConfigDialog.ui
 #	${CMAKE_CURRENT_SOURCE_DIR}/NewPacketDialog.ui
 	${CMAKE_CURRENT_SOURCE_DIR}/AddAvpDialog.ui
+	${CMAKE_CURRENT_SOURCE_DIR}/AddTcapParameterDialog.ui
 	${CMAKE_CURRENT_SOURCE_DIR}/EditAvpDialog.ui
 	${CMAKE_CURRENT_SOURCE_DIR}/ExportPcapDialog.ui
 )
@@ -10,11 +11,13 @@ add_library(qtui_dialogs OBJECT
 	${CMAKE_CURRENT_SOURCE_DIR}/configdialog.cpp
 #	${CMAKE_CURRENT_SOURCE_DIR}/newpacketdialog.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/addavpdialog.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/addtcapparameterdialog.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/editavpdialog.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/exportpcapdialog.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/configdialog.h
 #	${CMAKE_CURRENT_SOURCE_DIR}/newpacketdialog.h
 	${CMAKE_CURRENT_SOURCE_DIR}/addavpdialog.h
+	${CMAKE_CURRENT_SOURCE_DIR}/addtcapparameterdialog.h
 	${CMAKE_CURRENT_SOURCE_DIR}/editavpdialog.h
 	${CMAKE_CURRENT_SOURCE_DIR}/exportpcapdialog.h
 	${Boar_DIALOG_UI_HEADERS}

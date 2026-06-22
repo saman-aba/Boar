@@ -18,7 +18,12 @@ target_link_libraries(libboar PUBLIC
 target_sources(libboar PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/diameter.c
 	${CMAKE_CURRENT_SOURCE_DIR}/diameter.h
+	${CMAKE_CURRENT_SOURCE_DIR}/asn1-primitives.c
+	${CMAKE_CURRENT_SOURCE_DIR}/asn1.h
+	${CMAKE_CURRENT_SOURCE_DIR}/generated/tcap.c
+	${CMAKE_CURRENT_SOURCE_DIR}/generated/tcap.h
 )
 target_include_directories(libboar PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/..
+	${CMAKE_CURRENT_SOURCE_DIR}/generated
 )
