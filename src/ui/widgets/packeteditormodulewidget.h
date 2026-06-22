@@ -12,6 +12,7 @@ class PacketEditorModuleWidget;
 }
 
 class DiameterEditorWidget;
+class ExportPcapDialog;
 class TcapEditorWidget;
 
 class PacketEditorModuleWidget : public QWidget
@@ -25,6 +26,8 @@ private:
 	QByteArray parseHexEditorText() const;
 	void loadHexFromFile();
 	void exportPcap();
+	QByteArray buildExportFrame(const QByteArray &payload, const ExportPcapDialog &dialog) const;
+	static QByteArray parseHexBytes(const QString &text, int expectedSize = -1);
 	void saveTemplate();
 	void saveTemplateAs();
 	void syncHexEditorFromBuffer();

@@ -14,6 +14,8 @@
 #include <QTableWidget>
 #include <QTableWidgetItem>
 
+#include <array>
+
 #include "../dialogs/exportpcapdialog.h"
 #include "diametereditorwidget.h"
 #include "tcapeditorwidget.h"
@@ -58,6 +60,13 @@ PacketEditorModuleWidget::PacketEditorModuleWidget(QWidget *parent)
 		currentPacketBytes_ = buffer;
 		syncHexEditorFromBuffer();
 	});
+	tcapEditorWidget_->setOnPacketChanged([this](const QByteArray &buffer) {
+		if (syncingHexView_) {
+			return;
+		}
+		currentPacketBytes_ = buffer;
+		syncHexEditorFromBuffer();
+	});
 	connect(ui_->comboProtocolSelector, &QComboBox::currentIndexChanged, this, [this](int index) {
 		ui_->protocolStack->setCurrentIndex(index);
 	});
@@ -69,6 +78,15 @@ PacketEditorModuleWidget::PacketEditorModuleWidget(QWidget *parent)
 				const QByteArray loadedBuffer = diameterEditorWidget_->loadedTemplateBuffer();
 				if (!loadedBuffer.isEmpty()) {
 					currentPacketBytes_ = loadedBuffer;
+					syncHexEditorFromBuffer();
+				}
+				return;
+			}
+			if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 2) {
+				tcapEditorWidget_->openTemplateFileDialog();
+				const QByteArray loadedBuffer = tcapEditorWidget_->loadedTemplateBuffer();
+				if (!loadedBuffer.isEmpty()) {
+					currentPacketBytes_ = tcapEditorWidget_->encodeCurrentMessage();
 					syncHexEditorFromBuffer();
 				}
 			}
@@ -132,9 +150,6 @@ void PacketEditorModuleWidget::exportPcap()
 	if (packetBytes.isEmpty()) {
 		return;
 	}
-	if (packetBytes.isEmpty()) {
-		return;
-	}
 	ExportPcapDialog dialog(this);
 	if (dialog.exec() != QDialog::Accepted) {
 		return;
@@ -143,13 +158,17 @@ void PacketEditorModuleWidget::exportPcap()
 	if (exportDirectory.isEmpty()) {
 		return;
 	}
+	const QByteArray frameBytes = buildExportFrame(packetBytes, dialog);
+	if (frameBytes.isEmpty()) {
+		return;
+	}
 	QFile file(QDir(exportDirectory).filePath(QStringLiteral("packet.pcap")));
 	if (!file.open(QIODevice::WriteOnly)) {
 		return;
 	}
 	QByteArray pcapData;
 	pcapData.append(QByteArray::fromHex("D4C3B2A1020004000000000000000000FFFF000001000000"));
-	const quint32 capturedLength = static_cast<quint32>(packetBytes.size());
+	const quint32 capturedLength = static_cast<quint32>(frameBytes.size());
 	auto appendLe32 = [&pcapData](quint32 value) {
 		pcapData.append(static_cast<char>(value & 0xFF));
 		pcapData.append(static_cast<char>((value >> 8) & 0xFF));
@@ -160,10 +179,92 @@ void PacketEditorModuleWidget::exportPcap()
 	appendLe32(0);
 	appendLe32(capturedLength);
 	appendLe32(capturedLength);
-	pcapData.append(packetBytes);
+	pcapData.append(frameBytes);
 	file.write(pcapData);
 }
 
+QByteArray PacketEditorModuleWidget::buildExportFrame(const QByteArray &payload, const ExportPcapDialog &dialog) const
+{
+	auto appendBe16 = [](QByteArray &buffer, quint16 value) {
+		buffer.append(static_cast<char>((value >> 8) & 0xFF));
+		buffer.append(static_cast<char>(value & 0xFF));
+	};
+	auto appendBe32 = [](QByteArray &buffer, quint32 value) {
+		buffer.append(static_cast<char>((value >> 24) & 0xFF));
+		buffer.append(static_cast<char>((value >> 16) & 0xFF));
+		buffer.append(static_cast<char>((value >> 8) & 0xFF));
+		buffer.append(static_cast<char>(value & 0xFF));
+	};
+	QByteArray transportBytes = payload;
+	const int transportIndex = dialog.transportProtocolIndex();
+	if (transportIndex == 0) {
+		QByteArray udpHeader;
+		appendBe16(udpHeader, dialog.sourcePort());
+		appendBe16(udpHeader, dialog.destinationPort());
+		appendBe16(udpHeader, static_cast<quint16>(8 + payload.size()));
+		appendBe16(udpHeader, 0);
+		transportBytes = udpHeader + payload;
+	} else if (transportIndex == 1) {
+		QByteArray tcpHeader;
+		appendBe16(tcpHeader, dialog.sourcePort());
+		appendBe16(tcpHeader, dialog.destinationPort());
+		appendBe32(tcpHeader, 0);
+		appendBe32(tcpHeader, 0);
+		tcpHeader.append(char(0x50));
+		tcpHeader.append(char(0x18));
+		appendBe16(tcpHeader, 65535);
+		appendBe16(tcpHeader, 0);
+		appendBe16(tcpHeader, 0);
+		transportBytes = tcpHeader + payload;
+	} else {
+		QByteArray sctpBytes;
+		appendBe16(sctpBytes, dialog.sourcePort());
+		appendBe16(sctpBytes, dialog.destinationPort());
+		appendBe32(sctpBytes, dialog.sctpVerificationTag());
+		appendBe32(sctpBytes, 0);
+		sctpBytes.append(char(0x00));
+		sctpBytes.append(char(0x03));
+		appendBe16(sctpBytes, static_cast<quint16>(16 + payload.size()));
+		appendBe32(sctpBytes, 0);
+		appendBe16(sctpBytes, 0);
+		appendBe16(sctpBytes, 0);
+		appendBe32(sctpBytes, dialog.sctpPayloadProtocolId());
+		sctpBytes.append(payload);
+		transportBytes = sctpBytes;
+	}
+	QByteArray ipBytes;
+	ipBytes.append(char(0x45));
+	ipBytes.append(char(0x00));
+	appendBe16(ipBytes, static_cast<quint16>(20 + transportBytes.size()));
+	appendBe16(ipBytes, 0);
+	appendBe16(ipBytes, 0);
+	ipBytes.append(char(dialog.ttl()));
+	ipBytes.append(char(transportIndex == 0 ? 17 : (transportIndex == 1 ? 6 : 132)));
+	appendBe16(ipBytes, 0);
+	QString sourceAddress = dialog.sourceAddress();
+	sourceAddress.replace('.', ' ');
+	QString destinationAddress = dialog.destinationAddress();
+	destinationAddress.replace('.', ' ');
+	QByteArray sourceIp = parseHexBytes(sourceAddress, 4);
+	QByteArray destinationIp = parseHexBytes(destinationAddress, 4);
+	if (sourceIp.size() != 4 || destinationIp.size() != 4) {
+		return {};
+	}
+	ipBytes.append(sourceIp);
+	ipBytes.append(destinationIp);
+	ipBytes.append(transportBytes);
+	QByteArray frame;
+	QByteArray dstMac = parseHexBytes(dialog.destinationMac(), 6);
+	QByteArray srcMac = parseHexBytes(dialog.sourceMac(), 6);
+	if (dstMac.size() != 6 || srcMac.size() != 6) {
+		return {};
+	}
+	frame.append(dstMac);
+	frame.append(srcMac);
+	appendBe16(frame, 0x0800);
+	frame.append(ipBytes);
+	return frame;
+}
 PacketEditorModuleWidget::~PacketEditorModuleWidget() = default;
 
 void PacketEditorModuleWidget::populateHexTable(const QByteArray &bytes)
@@ -185,6 +286,29 @@ void PacketEditorModuleWidget::populateHexTable(const QByteArray &bytes)
 			ui_->tableHexEditor->setItem(row, column, item);
 		}
 	}
+}
+
+QByteArray PacketEditorModuleWidget::parseHexBytes(const QString &text, int expectedSize)
+{
+	QString normalized = text;
+	normalized.replace(':', ' ');
+	normalized.replace('-', ' ');
+	QByteArray compact;
+	const QStringList parts = normalized.split(' ', Qt::SkipEmptyParts);
+	for (const QString &part : parts) {
+		bool ok = false;
+		const int value = part.toInt(&ok, 10);
+		if (ok && expectedSize == 4) {
+			compact.append(QByteArray::number(value, 16).rightJustified(2, '0'));
+			continue;
+		}
+		compact.append(part.toLatin1());
+	}
+	QByteArray bytes = QByteArray::fromHex(compact);
+	if (expectedSize >= 0 && bytes.size() != expectedSize) {
+		return {};
+	}
+	return bytes;
 }
 
 QByteArray PacketEditorModuleWidget::parseHexEditorText() const
@@ -225,31 +349,52 @@ void PacketEditorModuleWidget::applyHexEditorToActiveProtocol()
 	}
 	if (ui_->comboProtocolSelector->currentIndex() == 0) {
 		diameterEditorWidget_->setTemplateBuffer(currentPacketBytes_);
+		return;
+	}
+	if (ui_->comboProtocolSelector->currentIndex() == 2) {
+		tcapEditorWidget_->setTemplateBuffer(currentPacketBytes_);
 	}
 }
 
 void PacketEditorModuleWidget::saveTemplate()
 {
-	if (!ui_->comboProtocolSelector || ui_->comboProtocolSelector->currentIndex() != 0) {
+	if (!ui_->comboProtocolSelector) {
 		return;
 	}
-	if (diameterEditorWidget_->saveTemplate()) {
-		currentPacketBytes_ = diameterEditorWidget_->currentTemplateBuffer();
-		syncHexEditorFromBuffer();
-		showStatusMessage(QStringLiteral("Template saved"));
+	if (ui_->comboProtocolSelector->currentIndex() == 0) {
+		if (diameterEditorWidget_->saveTemplate()) {
+			currentPacketBytes_ = diameterEditorWidget_->currentTemplateBuffer();
+			syncHexEditorFromBuffer();
+			showStatusMessage(QStringLiteral("Template saved"));
+			return;
+		}
+		showStatusMessage(QStringLiteral("No current template path. Use Save As Template."));
 		return;
 	}
-	showStatusMessage(QStringLiteral("No current template path. Use Save As Template."));
+	if (ui_->comboProtocolSelector->currentIndex() == 2) {
+		if (tcapEditorWidget_->saveTemplate()) {
+			currentPacketBytes_ = tcapEditorWidget_->encodeCurrentMessage();
+			syncHexEditorFromBuffer();
+			showStatusMessage(QStringLiteral("Template saved"));
+			return;
+		}
+		showStatusMessage(QStringLiteral("No current template path. Use Save As Template."));
+	}
 }
 
 void PacketEditorModuleWidget::saveTemplateAs()
 {
-	if (!ui_->comboProtocolSelector || ui_->comboProtocolSelector->currentIndex() != 0) {
+	if (!ui_->comboProtocolSelector) {
+		return;
+	}
+	const bool isDiameter = ui_->comboProtocolSelector->currentIndex() == 0;
+	const bool isTcap = ui_->comboProtocolSelector->currentIndex() == 2;
+	if (!isDiameter && !isTcap) {
 		return;
 	}
 	const QString filePath = QFileDialog::getSaveFileName(this,
-		QStringLiteral("Save Diameter Template"),
-		diameterEditorWidget_->currentTemplatePath(),
+		isDiameter ? QStringLiteral("Save Diameter Template") : QStringLiteral("Save TCAP Template"),
+		isDiameter ? diameterEditorWidget_->currentTemplatePath() : tcapEditorWidget_->currentTemplatePath(),
 		QStringLiteral("JSON Templates (*.json);;All Files (*)"));
 	if (filePath.isEmpty()) {
 		showStatusMessage(QStringLiteral("Template name is required"));
@@ -259,11 +404,12 @@ void PacketEditorModuleWidget::saveTemplateAs()
 		showStatusMessage(QStringLiteral("Template name is required"));
 		return;
 	}
-	if (!diameterEditorWidget_->saveTemplateAs(filePath)) {
+	const bool saved = isDiameter ? diameterEditorWidget_->saveTemplateAs(filePath) : tcapEditorWidget_->saveTemplateAs(filePath);
+	if (!saved) {
 		showStatusMessage(QStringLiteral("Failed to save template"));
 		return;
 	}
-	currentPacketBytes_ = diameterEditorWidget_->currentTemplateBuffer();
+	currentPacketBytes_ = isDiameter ? diameterEditorWidget_->currentTemplateBuffer() : tcapEditorWidget_->encodeCurrentMessage();
 	syncHexEditorFromBuffer();
 	showStatusMessage(QStringLiteral("Template saved"));
 }
@@ -278,6 +424,9 @@ void PacketEditorModuleWidget::closeCurrentTemplate()
 	}
 	if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 0) {
 		diameterEditorWidget_->clearTemplate();
+	}
+	if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 2) {
+		tcapEditorWidget_->setTemplateBuffer({});
 	}
 }
 
