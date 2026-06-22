@@ -197,6 +197,41 @@ QByteArray PacketEditorModuleWidget::buildExportFrame(const QByteArray &payload,
 	};
 	QByteArray transportBytes = payload;
 	const int transportIndex = dialog.transportProtocolIndex();
+	if (transportIndex == 2 && ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 2) {
+		QByteArray sccpBytes;
+		sccpBytes.append(char(0x09));
+		sccpBytes.append(char(0x00));
+		sccpBytes.append(char(0x03));
+		sccpBytes.append(char(0x04));
+		sccpBytes.append(char(0x05));
+		sccpBytes.append(char(0x00));
+		sccpBytes.append(char(0x00));
+		sccpBytes.append(char(payload.size()));
+		sccpBytes.append(payload);
+
+		QByteArray m3uaBytes;
+		m3uaBytes.append(char(0x01));
+		m3uaBytes.append(char(0x00));
+		m3uaBytes.append(char(0x01));
+		m3uaBytes.append(char(0x01));
+
+		QByteArray parameter;
+		appendBe16(parameter, 0x0210);
+		appendBe16(parameter, static_cast<quint16>(16 + sccpBytes.size()));
+		appendBe32(parameter, 1);
+		appendBe32(parameter, 2);
+		parameter.append(char(0x03));
+		parameter.append(char(0x02));
+		parameter.append(char(0x00));
+		parameter.append(char(0x00));
+		parameter.append(sccpBytes);
+		while (parameter.size() % 4 != 0) {
+			parameter.append(char(0x00));
+		}
+		appendBe32(m3uaBytes, static_cast<quint32>(8 + parameter.size()));
+		m3uaBytes.append(parameter);
+		transportBytes = m3uaBytes;
+	}
 	if (transportIndex == 0) {
 		QByteArray udpHeader;
 		appendBe16(udpHeader, dialog.sourcePort());

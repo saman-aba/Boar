@@ -33,7 +33,7 @@ QStringList loadOperationNames(const QString &path, const QRegularExpression &pa
 	auto it = pattern.globalMatch(content);
 	while (it.hasNext()) {
 		const auto match = it.next();
-		const QString value = match.captured(1).trimmed();
+		const QString value = match.lastCapturedIndex() >= 2 ? match.captured(2).trimmed() : match.captured(1).trimmed();
 		if (!value.isEmpty() && !values.contains(value)) {
 			values.append(value);
 		}
@@ -56,6 +56,63 @@ QStringList loadParameterNames(const QString &path, const QString &enumPrefix)
 		values.append(match.captured(1));
 	}
 	values.removeDuplicates();
+	return values;
+}
+
+QList<TcapParameterOption> loadStructParameterDetails(const QString &path, const QString &structName)
+{
+	QFile file(path);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		return {};
+	}
+	const QString content = QString::fromUtf8(file.readAll());
+	const QRegularExpression blockPattern(QStringLiteral(R"(typedef struct %1 \{([^}]*)\} %1_t;)").arg(QRegularExpression::escape(structName)), QRegularExpression::DotMatchesEverythingOption);
+	const auto blockMatch = blockPattern.match(content);
+	if (!blockMatch.hasMatch()) {
+		return {};
+	}
+	const QString block = blockMatch.captured(1);
+	const QRegularExpression linePattern(QStringLiteral(R"(^\s*([A-Za-z0-9_]+(?:\s*\*)?)\s+([A-Za-z0-9_]+);)") , QRegularExpression::MultilineOption);
+	QList<TcapParameterOption> values;
+	auto it = linePattern.globalMatch(block);
+	while (it.hasNext()) {
+		const auto match = it.next();
+		const QString fieldName = match.captured(2).trimmed();
+		if (fieldName == QStringLiteral("seen_mask")) {
+			continue;
+		}
+		QString typeName = match.captured(1).trimmed();
+		typeName.replace(QStringLiteral(" *"), QStringLiteral("*"));
+		values.append({fieldName, typeName});
+	}
+	return values;
+}
+
+QList<TcapParameterOption> loadSequenceParameterDetails(const QString &path, const QString &sequenceName)
+{
+	QFile file(path);
+	if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+		return {};
+	}
+	const QString content = QString::fromUtf8(file.readAll());
+	const QRegularExpression blockPattern(QStringLiteral(R"(%1 \{PARAMETERS-BOUND[^
+]*::= SEQUENCE \{(.*?)
+	\})").arg(QRegularExpression::escape(sequenceName)), QRegularExpression::DotMatchesEverythingOption);
+	const auto blockMatch = blockPattern.match(content);
+	if (!blockMatch.hasMatch()) {
+		return {};
+	}
+	const QString block = blockMatch.captured(1);
+	const QRegularExpression linePattern(QStringLiteral(R"(^\s*([A-Za-z0-9_-]+)\s+\[[0-9]+\]\s+([^
+]+?)(?:\s+OPTIONAL)?\s*(?:,)?$)") , QRegularExpression::MultilineOption);
+	QList<TcapParameterOption> values;
+	auto it = linePattern.globalMatch(block);
+	while (it.hasNext()) {
+		const auto match = it.next();
+		QString typeName = match.captured(2).trimmed();
+		typeName.remove(QStringLiteral("{bound}"));
+		values.append({match.captured(1).trimmed(), typeName.trimmed()});
+	}
 	return values;
 }
 
@@ -385,31 +442,46 @@ QStringList TcapEditorWidget::parameterOptionsForCurrentOperation() const
 	return parameterOptionsForOperation(ui_->comboAppFamily ? ui_->comboAppFamily->currentText() : QString(), ui_->comboOperation ? ui_->comboOperation->currentText() : QString());
 }
 
+QList<TcapParameterOption> TcapEditorWidget::parameterDetailsForCurrentOperation() const
+{
+	return parameterDetailsForOperation(ui_->comboAppFamily ? ui_->comboAppFamily->currentText() : QString(), ui_->comboOperation ? ui_->comboOperation->currentText() : QString());
+}
+
 QStringList TcapEditorWidget::parameterOptionsForOperation(const QString &family, const QString &operation) const
+{
+	const QList<TcapParameterOption> details = parameterDetailsForOperation(family, operation);
+	QStringList values;
+	for (const TcapParameterOption &detail : details) {
+		values.append(detail.name);
+	}
+	return values;
+}
+
+QList<TcapParameterOption> TcapEditorWidget::parameterDetailsForOperation(const QString &family, const QString &operation) const
 {
 	if (family == QStringLiteral("MAP")) {
 		if (operation == QStringLiteral("updateLocation")) {
-			return loadParameterNames(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-ms-data-types.h"), QStringLiteral("map_update_location_arg"));
+			return loadStructParameterDetails(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-ms-data-types.h"), QStringLiteral("map_update_location_arg"));
 		}
 		if (operation == QStringLiteral("sendAuthenticationInfo")) {
-			return loadParameterNames(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-ms-data-types.h"), QStringLiteral("map_send_authentication_info_arg"));
+			return loadStructParameterDetails(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-ms-data-types.h"), QStringLiteral("map_send_authentication_info_arg"));
 		}
 		if (operation == QStringLiteral("insertSubscriberData")) {
-			return loadParameterNames(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-ms-data-types.h"), QStringLiteral("map_insert_subscriber_data_arg"));
+			return loadStructParameterDetails(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-ms-data-types.h"), QStringLiteral("map_insert_subscriber_data_arg"));
 		}
 		if (operation == QStringLiteral("mo-forwardSM")) {
-			return loadParameterNames(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-sm-data-types.h"), QStringLiteral("map_mo_forward_sm_arg"));
+			return loadStructParameterDetails(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-sm-data-types.h"), QStringLiteral("map_mo_forward_sm_arg"));
 		}
 		if (operation == QStringLiteral("mt-forwardSM")) {
-			return loadParameterNames(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-sm-data-types.h"), QStringLiteral("map_mt_forward_sm_arg"));
+			return loadStructParameterDetails(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-sm-data-types.h"), QStringLiteral("map_mt_forward_sm_arg"));
 		}
 		if (operation == QStringLiteral("sendRoutingInfoForSM")) {
-			return loadParameterNames(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-sm-data-types.h"), QStringLiteral("map_routing_info_for_sm_arg"));
+			return loadStructParameterDetails(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/map-sm-data-types.h"), QStringLiteral("map_routing_info_for_sm_arg"));
 		}
 		return {};
 	}
 	if (operation == QStringLiteral("initialDPGPRS")) {
-		return loadParameterNames(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/cap-gprs-ssf-gsm-scf-ops-args.h"), QStringLiteral("map_initial_dpgprsarg"));
+		return loadSequenceParameterDetails(QStringLiteral(BOAR_SOURCE_DIR "/src/core/generated/cap-gprs-ssf-gsm-scf-ops-args.h"), QStringLiteral("InitialDPGPRSArg"));
 	}
 	return {};
 }
@@ -420,8 +492,14 @@ void TcapEditorWidget::addParameter(bool asChild)
 		return;
 	}
 	AddTcapParameterDialog dialog(this);
-	const QStringList options = parameterOptionsForCurrentOperation();
-	dialog.setParameterOptions(options.isEmpty() ? QStringList{QStringLiteral("parameter")} : options);
+	const QList<TcapParameterOption> details = parameterDetailsForCurrentOperation();
+	QStringList options;
+	QHash<QString, QString> typeNames;
+	for (const TcapParameterOption &detail : details) {
+		options.append(detail.name);
+		typeNames.insert(detail.name, detail.typeName);
+	}
+	dialog.setParameterDetails(options.isEmpty() ? QStringList{QStringLiteral("parameter")} : options, typeNames);
 	if (dialog.exec() != QDialog::Accepted) {
 		return;
 	}

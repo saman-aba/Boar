@@ -8,6 +8,12 @@
 
 class QString;
 
+struct TcapParameterOption
+{
+	QString name;
+	QString typeName;
+};
+
 namespace Ui
 {
 class TcapEditorWidget;
@@ -41,7 +47,9 @@ private:
 	void populateGeneratedDropdowns();
 	void refreshOperationOptions();
 	QStringList parameterOptionsForCurrentOperation() const;
+	QList<TcapParameterOption> parameterDetailsForCurrentOperation() const;
 	QStringList parameterOptionsForOperation(const QString &family, const QString &operation) const;
+	QList<TcapParameterOption> parameterDetailsForOperation(const QString &family, const QString &operation) const;
 	void addParameter(bool asChild);
 	void moveCurrentParameter(int delta);
 	QString buildStructureText() const;
