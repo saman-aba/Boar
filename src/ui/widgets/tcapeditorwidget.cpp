@@ -334,7 +334,7 @@ QByteArray TcapEditorWidget::encodeCurrentMessage(QString *errorMessage) const
 		assignOctetString(cont->otid, otid);
 		assignOctetString(cont->dtid, dtid);
 		message.choice = tcap_tcmessage_continue;
-		message.u.continue_msg = cont;
+		message.u.continue_ = cont;
 	} else if (messageType == QStringLiteral("End")) {
 		auto *end = new tcap_end_t{};
 		end->seen_mask = tcap_end_MANDATORY_MASK;
@@ -369,7 +369,7 @@ QByteArray TcapEditorWidget::encodeCurrentMessage(QString *errorMessage) const
 	if (message.choice == tcap_tcmessage_begin) {
 		delete message.u.begin;
 	} else if (message.choice == tcap_tcmessage_continue) {
-		delete message.u.continue_msg;
+		delete message.u.continue_;
 	} else if (message.choice == tcap_tcmessage_end) {
 		delete message.u.end;
 	} else if (message.choice == tcap_tcmessage_abort) {
