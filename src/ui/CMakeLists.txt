@@ -12,6 +12,10 @@ add_library(qtui OBJECT
 	${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc
 	${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/mainwindow.h
+	${CMAKE_CURRENT_SOURCE_DIR}/forgedpacketrecord.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/forgedpacketrecord.h
+	${CMAKE_CURRENT_SOURCE_DIR}/forgedpacketrepository.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/forgedpacketrepository.h
 	${Boar_UI_HEADERS}
 	$<TARGET_OBJECTS:qtui_dialogs>
 	$<TARGET_OBJECTS:qtui_widgets>

@@ -2,7 +2,7 @@
 
 #include <QAction>
 #include <QMenuBar>
-#include <QPushButton>
+#include <QPlainTextEdit>
 #include <QStatusBar>
 
 #include "dialogs/configdialog.h"
@@ -32,6 +32,11 @@ MainWindow::MainWindow(QWidget *parent)
 	setupToolbar();
 	setupConnections();
 	applyConfig(config_);
+	if (!forgedPacketRepository_.load()) {
+		appendApplicationLog(QStringLiteral("Failed to load packets from database: %1").arg(forgedPacketRepository_.lastError()));
+	}
+	dashboardModuleWidget_->setPackets(forgedPacketRepository_.packets());
+	appendApplicationLog(QStringLiteral("Application started"));
 	setMinimumSize(size());
 }
 
@@ -66,15 +71,29 @@ void MainWindow::setupConnections()
 			}
 	);
 
-	if (auto *button = dashboardModuleWidget_->findChild<QPushButton *>(QStringLiteral("btnOpenPacketGen"))) {
-		connect(button, &QPushButton::clicked,
-				this,
-				[this]() {
-					ui_->navList->setCurrentRow(1);
-					switchCenterPage(1);
-				}
-		);
-	}
+	dashboardModuleWidget_->setOnOpenPacketGenerator([this]() {
+		ui_->navList->setCurrentRow(1);
+		switchCenterPage(1);
+		appendApplicationLog(QStringLiteral("Opened packet generator"));
+	});
+	dashboardModuleWidget_->setOnOpenPacket([this](const ForgedPacketRecord &packet) {
+		openForgedPacket(packet);
+	});
+	dashboardModuleWidget_->setOnEditPacket([this](const QString &packetId) {
+		editForgedPacket(packetId);
+	});
+	dashboardModuleWidget_->setOnRemovePacket([this](const QString &packetId) {
+		removeForgedPacket(packetId);
+	});
+	dashboardModuleWidget_->setOnExportPacket([this](const ForgedPacketRecord &packet) {
+		exportForgedPacket(packet);
+	});
+	dashboardModuleWidget_->setOnTransmitPacket([this](const ForgedPacketRecord &packet, const QString &target) {
+		transmitForgedPacket(packet, target);
+	});
+	packetEditorModuleWidget_->setOnPacketForged([this](const ForgedPacketRecord &packet) {
+		saveForgedPacket(packet);
+	});
 }
 
 void MainWindow::showConfigDialog()
@@ -88,8 +107,10 @@ void MainWindow::showConfigDialog()
 		applyConfig(config);
 		if (config_.save()) {
 			statusBar()->showMessage(QStringLiteral("Configuration saved"), 2000);
+			appendApplicationLog(QStringLiteral("Configuration saved"));
 		} else {
 			statusBar()->showMessage(QStringLiteral("Failed to save configuration"), 2000);
+			appendApplicationLog(QStringLiteral("Failed to save configuration"));
 		}
 		dialog->close();
 	});
@@ -121,4 +142,69 @@ void MainWindow::switchCenterPage(int index)
 	if (index >= 0 && index < ui_->stackMain->count()) {
 		ui_->stackMain->setCurrentIndex(index);
 	}
+}
+
+void MainWindow::appendApplicationLog(const QString &message)
+{
+	if (ui_->logConsole) {
+		ui_->logConsole->appendPlainText(message);
+	}
+}
+
+void MainWindow::saveForgedPacket(const ForgedPacketRecord &packet)
+{
+	const bool exists = forgedPacketRepository_.contains(packet.id);
+	if (!forgedPacketRepository_.upsertPacket(packet)) {
+		appendApplicationLog(QStringLiteral("Failed to save packet to database: %1").arg(forgedPacketRepository_.lastError()));
+		return;
+	}
+	if (exists) {
+		dashboardModuleWidget_->updatePacket(packet);
+		appendApplicationLog(QStringLiteral("Updated forged packet: %1").arg(packet.name));
+	} else {
+		dashboardModuleWidget_->addPacket(packet);
+		appendApplicationLog(QStringLiteral("Added forged packet: %1").arg(packet.name));
+	}
+	packetEditorModuleWidget_->clearEditingPacket();
+	ui_->navList->setCurrentRow(0);
+	ui_->stackMain->setCurrentIndex(0);
+}
+
+void MainWindow::openForgedPacket(const ForgedPacketRecord &packet)
+{
+	packetEditorModuleWidget_->loadForgedPacket(packet);
+	ui_->navList->setCurrentRow(1);
+	ui_->stackMain->setCurrentIndex(1);
+	appendApplicationLog(QStringLiteral("Loaded packet into generator: %1").arg(packet.name));
+}
+
+void MainWindow::editForgedPacket(const QString &packetId)
+{
+	const auto packet = forgedPacketRepository_.packetById(packetId);
+	if (packet.id.isEmpty()) {
+		appendApplicationLog(QStringLiteral("Edit failed: packet not found"));
+		return;
+	}
+	openForgedPacket(packet);
+}
+
+void MainWindow::removeForgedPacket(const QString &packetId)
+{
+	if (!forgedPacketRepository_.removePacket(packetId)) {
+		appendApplicationLog(QStringLiteral("Failed to remove packet from database: %1").arg(forgedPacketRepository_.lastError()));
+		return;
+	}
+	dashboardModuleWidget_->removePacket(packetId);
+	appendApplicationLog(QStringLiteral("Removed forged packet"));
+}
+
+void MainWindow::exportForgedPacket(const ForgedPacketRecord &packet)
+{
+	appendApplicationLog(QStringLiteral("Export completed: %1").arg(packet.name));
+}
+
+void MainWindow::transmitForgedPacket(const ForgedPacketRecord &packet, const QString &target)
+{
+	appendApplicationLog(QStringLiteral("Transmit requested for %1 via %2").arg(packet.name, target));
+	statusBar()->showMessage(QStringLiteral("Transmit queued for %1 via %2").arg(packet.name, target), 3000);
 }

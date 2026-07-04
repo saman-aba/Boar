@@ -1,6 +1,12 @@
 add_library(libboar STATIC
 	${CMAKE_CURRENT_SOURCE_DIR}/appconfig.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/appconfig.h
+	${CMAKE_CURRENT_SOURCE_DIR}/db.c
+	${CMAKE_CURRENT_SOURCE_DIR}/db.h
+	${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.c
+	${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.h
+	${CMAKE_CURRENT_SOURCE_DIR}/packet-builder.c
+	${CMAKE_CURRENT_SOURCE_DIR}/packet-builder.h
 )
 target_include_directories(libboar PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
@@ -14,6 +20,10 @@ target_link_libraries(libboar PUBLIC
 	Qt6::Core
 	${JANSSON_LIBRARIES}
 )
+
+#add_subdirectory(map)
+#add_subdirectory(tcap)
+#add_subdirectory(camel)
 
 target_sources(libboar PRIVATE
 	${CMAKE_CURRENT_SOURCE_DIR}/diameter.c

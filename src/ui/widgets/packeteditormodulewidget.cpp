@@ -1,6 +1,7 @@
 #include "packeteditormodulewidget.h"
 
 #include <QComboBox>
+#include <QDateTime>
 #include <QDir>
 #include <QFile>
 #include <QFileDialog>
@@ -8,15 +9,19 @@
 #include <QFontDatabase>
 #include <QHeaderView>
 #include <QMainWindow>
-#include <QStatusBar>
 #include <QPushButton>
 #include <QSignalBlocker>
+#include <QStatusBar>
 #include <QTableWidget>
 #include <QTableWidgetItem>
+#include <QUuid>
 
 #include <array>
 
+#include <algorithm>
+
 #include "../dialogs/exportpcapdialog.h"
+#include "../dialogs/sccpparametersdialog.h"
 #include "diametereditorwidget.h"
 #include "tcapeditorwidget.h"
 #include "ui_PacketEditorModuleWidget.h"
@@ -117,6 +122,11 @@ PacketEditorModuleWidget::PacketEditorModuleWidget(QWidget *parent)
 			closeCurrentTemplate();
 		});
 	}
+	if (ui_->btnSend) {
+		connect(ui_->btnSend, &QPushButton::clicked, this, [this]() {
+			injectPacket();
+		});
+	}
 	if (ui_->tableHexEditor) {
 		connect(ui_->tableHexEditor, &QTableWidget::itemChanged, this, [this](QTableWidgetItem *) {
 			if (syncingHexView_) {
@@ -126,6 +136,32 @@ PacketEditorModuleWidget::PacketEditorModuleWidget(QWidget *parent)
 			applyHexEditorToActiveProtocol();
 		});
 	}
+}
+
+PacketEditorModuleWidget::~PacketEditorModuleWidget() = default;
+
+void PacketEditorModuleWidget::setOnPacketForged(const std::function<void(const ForgedPacketRecord &)> &callback)
+{
+	onPacketForged_ = callback;
+}
+
+void PacketEditorModuleWidget::loadForgedPacket(const ForgedPacketRecord &packet)
+{
+	editingPacketId_ = packet.id;
+	currentPacketBytes_ = packet.payload;
+	syncHexEditorFromBuffer();
+	if (ui_->comboProtocolSelector) {
+		const int index = ui_->comboProtocolSelector->findText(packet.protocol);
+		if (index >= 0) {
+			ui_->comboProtocolSelector->setCurrentIndex(index);
+		}
+	}
+	applyHexEditorToActiveProtocol();
+}
+
+void PacketEditorModuleWidget::clearEditingPacket()
+{
+	editingPacketId_.clear();
 }
 
 void PacketEditorModuleWidget::loadHexFromFile()
@@ -148,6 +184,7 @@ void PacketEditorModuleWidget::exportPcap()
 {
 	const QByteArray packetBytes = parseHexEditorText();
 	if (packetBytes.isEmpty()) {
+		showStatusMessage(QStringLiteral("Nothing to export"));
 		return;
 	}
 	ExportPcapDialog dialog(this);
@@ -156,31 +193,149 @@ void PacketEditorModuleWidget::exportPcap()
 	}
 	const QString exportDirectory = dialog.exportDirectory();
 	if (exportDirectory.isEmpty()) {
+		showStatusMessage(QStringLiteral("Export directory is required"));
 		return;
 	}
 	const QByteArray frameBytes = buildExportFrame(packetBytes, dialog);
 	if (frameBytes.isEmpty()) {
+		showStatusMessage(QStringLiteral("Failed to build frame"));
 		return;
 	}
-	QFile file(QDir(exportDirectory).filePath(QStringLiteral("packet.pcap")));
+	const QByteArray pcapBytes = buildPcapBytes(frameBytes);
+	const QString filePath = QDir(exportDirectory).filePath(QStringLiteral("packet.pcap"));
+	QFile file(filePath);
 	if (!file.open(QIODevice::WriteOnly)) {
+		showStatusMessage(QStringLiteral("Failed to open PCAP file"));
 		return;
 	}
-	QByteArray pcapData;
-	pcapData.append(QByteArray::fromHex("D4C3B2A1020004000000000000000000FFFF000001000000"));
-	const quint32 capturedLength = static_cast<quint32>(frameBytes.size());
-	auto appendLe32 = [&pcapData](quint32 value) {
-		pcapData.append(static_cast<char>(value & 0xFF));
-		pcapData.append(static_cast<char>((value >> 8) & 0xFF));
-		pcapData.append(static_cast<char>((value >> 16) & 0xFF));
-		pcapData.append(static_cast<char>((value >> 24) & 0xFF));
-	};
-	appendLe32(0);
-	appendLe32(0);
-	appendLe32(capturedLength);
-	appendLe32(capturedLength);
-	pcapData.append(frameBytes);
-	file.write(pcapData);
+	file.write(pcapBytes);
+	showStatusMessage(QStringLiteral("PCAP exported"));
+}
+
+void PacketEditorModuleWidget::injectPacket()
+{
+	const QByteArray payload = parseHexEditorText();
+	if (payload.isEmpty()) {
+		showStatusMessage(QStringLiteral("Packet is empty"));
+		return;
+	}
+	QByteArray frameBytes;
+	QByteArray pcapBytes;
+	QString summary = QStringLiteral("Raw payload");
+	QString packetName = QStringLiteral("forged_packet");
+	if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 2) {
+		SccpParametersDialog dialog(this);
+		if (dialog.exec() != QDialog::Accepted) {
+			return;
+		}
+		packetName = dialog.packetName().isEmpty() ? QStringLiteral("forged_sccp_packet") : dialog.packetName();
+		ExportPcapDialog exportDialog(this);
+		frameBytes = buildExportFrame(payload, exportDialog);
+		if (frameBytes.isEmpty()) {
+			auto appendBe16 = [](QByteArray &buffer, quint16 value) {
+				buffer.append(static_cast<char>((value >> 8) & 0xFF));
+				buffer.append(static_cast<char>(value & 0xFF));
+			};
+			auto appendBe32 = [](QByteArray &buffer, quint32 value) {
+				buffer.append(static_cast<char>((value >> 24) & 0xFF));
+				buffer.append(static_cast<char>((value >> 16) & 0xFF));
+				buffer.append(static_cast<char>((value >> 8) & 0xFF));
+				buffer.append(static_cast<char>(value & 0xFF));
+			};
+			QByteArray sccpBytes;
+			const char sccpType = dialog.sccpMessageType() == QStringLiteral("XUDT") ? char(0x11) : (dialog.sccpMessageType() == QStringLiteral("LUDT") ? char(0x13) : char(0x09));
+			sccpBytes.append(sccpType);
+			sccpBytes.append(char(0x00));
+			sccpBytes.append(char(0x03));
+			sccpBytes.append(char(0x04));
+			sccpBytes.append(char(0x05));
+			sccpBytes.append(char(0x00));
+			sccpBytes.append(char(0x00));
+			sccpBytes.append(char(payload.size()));
+			sccpBytes.append(payload);
+			QByteArray protocolPayload = sccpBytes;
+			if (dialog.includeM3ua()) {
+				QByteArray m3uaBytes;
+				m3uaBytes.append(char(0x01));
+				m3uaBytes.append(char(0x00));
+				m3uaBytes.append(char(0x01));
+				m3uaBytes.append(char(0x01));
+				QByteArray parameter;
+				appendBe16(parameter, 0x0210);
+				appendBe16(parameter, static_cast<quint16>(16 + sccpBytes.size()));
+				appendBe32(parameter, 1);
+				appendBe32(parameter, 2);
+				parameter.append(char(0x03));
+				parameter.append(char(0x02));
+				parameter.append(char(0x00));
+				parameter.append(char(0x00));
+				parameter.append(sccpBytes);
+				while (parameter.size() % 4 != 0) {
+					parameter.append(char(0x00));
+				}
+				appendBe32(m3uaBytes, static_cast<quint32>(8 + parameter.size()));
+				m3uaBytes.append(parameter);
+				protocolPayload = m3uaBytes;
+			}
+			QByteArray sctpBytes;
+			appendBe16(sctpBytes, dialog.sourcePort());
+			appendBe16(sctpBytes, dialog.destinationPort());
+			appendBe32(sctpBytes, dialog.verificationTag());
+			appendBe32(sctpBytes, 0);
+			sctpBytes.append(dialog.sctpChunkType() == QStringLiteral("I-DATA") ? char(0x40) : char(0x00));
+			sctpBytes.append(char(0x03));
+			appendBe16(sctpBytes, static_cast<quint16>(16 + protocolPayload.size()));
+			appendBe32(sctpBytes, 0);
+			appendBe16(sctpBytes, 0);
+			appendBe16(sctpBytes, 0);
+			appendBe32(sctpBytes, dialog.payloadProtocolId());
+			sctpBytes.append(protocolPayload);
+			QByteArray ipBytes;
+			ipBytes.append(char(0x45));
+			ipBytes.append(char(0x00));
+			appendBe16(ipBytes, static_cast<quint16>(20 + sctpBytes.size()));
+			appendBe16(ipBytes, 0);
+			appendBe16(ipBytes, 0);
+			ipBytes.append(char(dialog.ttl()));
+			ipBytes.append(char(132));
+			appendBe16(ipBytes, 0);
+			QString sourceAddress = dialog.sourceAddress();
+			sourceAddress.replace('.', ' ');
+			QString destinationAddress = dialog.destinationAddress();
+			destinationAddress.replace('.', ' ');
+			const QByteArray sourceIp = parseHexBytes(sourceAddress, 4);
+			const QByteArray destinationIp = parseHexBytes(destinationAddress, 4);
+			if (sourceIp.size() != 4 || destinationIp.size() != 4) {
+				showStatusMessage(QStringLiteral("Invalid IP address"));
+				return;
+			}
+			ipBytes.append(sourceIp);
+			ipBytes.append(destinationIp);
+			ipBytes.append(sctpBytes);
+			const QByteArray destinationMac = parseHexBytes(dialog.destinationMac(), 6);
+			const QByteArray sourceMac = parseHexBytes(dialog.sourceMac(), 6);
+			if (destinationMac.size() != 6 || sourceMac.size() != 6) {
+				showStatusMessage(QStringLiteral("Invalid MAC address"));
+				return;
+			}
+			frameBytes.append(destinationMac);
+			frameBytes.append(sourceMac);
+			appendBe16(frameBytes, 0x0800);
+			frameBytes.append(ipBytes);
+		}
+		pcapBytes = buildPcapBytes(frameBytes);
+		summary = QStringLiteral("SCTP %1 / %2 / payload %3 bytes")
+			.arg(dialog.includeM3ua() ? QStringLiteral("M3UA DATA") : QStringLiteral("SCCP"))
+			.arg(dialog.sccpMessageType())
+			.arg(payload.size());
+	} else {
+		pcapBytes = buildPcapBytes(payload);
+	}
+	const ForgedPacketRecord packet = buildForgedPacketRecord(payload, frameBytes, pcapBytes, packetName, summary);
+	if (onPacketForged_) {
+		onPacketForged_(packet);
+	}
+	showStatusMessage(QStringLiteral("Packet added to dashboard"));
 }
 
 QByteArray PacketEditorModuleWidget::buildExportFrame(const QByteArray &payload, const ExportPcapDialog &dialog) const
@@ -300,7 +455,111 @@ QByteArray PacketEditorModuleWidget::buildExportFrame(const QByteArray &payload,
 	frame.append(ipBytes);
 	return frame;
 }
-PacketEditorModuleWidget::~PacketEditorModuleWidget() = default;
+
+QByteArray PacketEditorModuleWidget::buildPcapBytes(const QByteArray &frameBytes) const
+{
+	QByteArray pcapData;
+	pcapData.append(QByteArray::fromHex("D4C3B2A1020004000000000000000000FFFF000001000000"));
+	const quint32 capturedLength = static_cast<quint32>(frameBytes.size());
+	auto appendLe32 = [&pcapData](quint32 value) {
+		pcapData.append(static_cast<char>(value & 0xFF));
+		pcapData.append(static_cast<char>((value >> 8) & 0xFF));
+		pcapData.append(static_cast<char>((value >> 16) & 0xFF));
+		pcapData.append(static_cast<char>((value >> 24) & 0xFF));
+	};
+	appendLe32(0);
+	appendLe32(0);
+	appendLe32(capturedLength);
+	appendLe32(capturedLength);
+	pcapData.append(frameBytes);
+	return pcapData;
+}
+
+ForgedPacketRecord PacketEditorModuleWidget::buildForgedPacketRecord(const QByteArray &payload, const QByteArray &frameBytes, const QByteArray &pcapBytes, const QString &name, const QString &summary) const
+{
+	ForgedPacketRecord packet;
+	packet.id = editingPacketId_.isEmpty() ? QUuid::createUuid().toString(QUuid::WithoutBraces) : editingPacketId_;
+	packet.name = name;
+	packet.protocol = activeProtocolName();
+	packet.summary = summary;
+	packet.exportBaseName = name;
+	packet.createdAt = QDateTime::currentDateTime().toString(Qt::ISODate);
+	packet.packetTypeKey = packetTypeKey();
+	packet.payload = payload;
+	packet.frameBytes = frameBytes;
+	packet.pcapBytes = pcapBytes;
+	populatePacketMetadata(packet, frameBytes);
+	return packet;
+}
+
+void PacketEditorModuleWidget::populatePacketMetadata(ForgedPacketRecord &packet, const QByteArray &frameBytes) const
+{
+	if (frameBytes.size() < 14) {
+		return;
+	}
+	packet.destinationMac = formatMacAddress(frameBytes.first(6));
+	packet.sourceMac = formatMacAddress(frameBytes.mid(6, 6));
+	const QByteArray etherTypeBytes = frameBytes.mid(12, 2);
+	if (etherTypeBytes.size() != 2 || static_cast<unsigned char>(etherTypeBytes.at(0)) != 0x08 || static_cast<unsigned char>(etherTypeBytes.at(1)) != 0x00) {
+		return;
+	}
+	const int ipOffset = 14;
+	if (frameBytes.size() < ipOffset + 20) {
+		return;
+	}
+	const int versionAndLength = static_cast<unsigned char>(frameBytes.at(ipOffset));
+	const int ipHeaderLength = (versionAndLength & 0x0F) * 4;
+	if (frameBytes.size() < ipOffset + ipHeaderLength) {
+		return;
+	}
+	packet.sourceIp = formatIpv4Address(frameBytes.mid(ipOffset + 12, 4));
+	packet.destinationIp = formatIpv4Address(frameBytes.mid(ipOffset + 16, 4));
+	const int protocol = static_cast<unsigned char>(frameBytes.at(ipOffset + 9));
+	const int transportOffset = ipOffset + ipHeaderLength;
+	if (protocol == 17 && frameBytes.size() >= transportOffset + 8) {
+		packet.transportProtocol = QStringLiteral("UDP");
+		packet.sourcePort = (static_cast<unsigned char>(frameBytes.at(transportOffset)) << 8) | static_cast<unsigned char>(frameBytes.at(transportOffset + 1));
+		packet.destinationPort = (static_cast<unsigned char>(frameBytes.at(transportOffset + 2)) << 8) | static_cast<unsigned char>(frameBytes.at(transportOffset + 3));
+	} else if (protocol == 6 && frameBytes.size() >= transportOffset + 20) {
+		packet.transportProtocol = QStringLiteral("TCP");
+		packet.sourcePort = (static_cast<unsigned char>(frameBytes.at(transportOffset)) << 8) | static_cast<unsigned char>(frameBytes.at(transportOffset + 1));
+		packet.destinationPort = (static_cast<unsigned char>(frameBytes.at(transportOffset + 2)) << 8) | static_cast<unsigned char>(frameBytes.at(transportOffset + 3));
+	} else if (protocol == 132 && frameBytes.size() >= transportOffset + 12) {
+		packet.transportProtocol = QStringLiteral("SCTP");
+		packet.sourcePort = (static_cast<unsigned char>(frameBytes.at(transportOffset)) << 8) | static_cast<unsigned char>(frameBytes.at(transportOffset + 1));
+		packet.destinationPort = (static_cast<unsigned char>(frameBytes.at(transportOffset + 2)) << 8) | static_cast<unsigned char>(frameBytes.at(transportOffset + 3));
+		const quint32 verificationTag = (static_cast<quint32>(static_cast<unsigned char>(frameBytes.at(transportOffset + 4))) << 24)
+			| (static_cast<quint32>(static_cast<unsigned char>(frameBytes.at(transportOffset + 5))) << 16)
+			| (static_cast<quint32>(static_cast<unsigned char>(frameBytes.at(transportOffset + 6))) << 8)
+			| static_cast<quint32>(static_cast<unsigned char>(frameBytes.at(transportOffset + 7)));
+		packet.sctpVerificationTag = QString::number(verificationTag);
+	} else {
+		packet.transportProtocol = QStringLiteral("Raw");
+	}
+}
+
+QString PacketEditorModuleWidget::packetTypeKey() const
+{
+	const QString protocol = activeProtocolName().trimmed().toLower();
+	if (protocol.contains(QStringLiteral("diameter"))) {
+		return QStringLiteral("diameter");
+	}
+	if (protocol.contains(QStringLiteral("tcap")) || protocol.contains(QStringLiteral("m3ua")) || protocol.contains(QStringLiteral("sccp"))) {
+		return QStringLiteral("m3ua");
+	}
+	if (protocol.contains(QStringLiteral("gtp"))) {
+		return QStringLiteral("gtp");
+	}
+	return QString();
+}
+
+QString PacketEditorModuleWidget::activeProtocolName() const
+{
+	if (!ui_->comboProtocolSelector) {
+		return QStringLiteral("Unknown");
+	}
+	return ui_->comboProtocolSelector->currentText();
+}
 
 void PacketEditorModuleWidget::populateHexTable(const QByteArray &bytes)
 {
@@ -321,6 +580,32 @@ void PacketEditorModuleWidget::populateHexTable(const QByteArray &bytes)
 			ui_->tableHexEditor->setItem(row, column, item);
 		}
 	}
+}
+
+QString PacketEditorModuleWidget::formatMacAddress(const QByteArray &bytes)
+{
+	if (bytes.size() != 6) {
+		return QString();
+	}
+	QStringList parts;
+	parts.reserve(6);
+	for (const auto byte : bytes) {
+		parts.append(QStringLiteral("%1").arg(static_cast<unsigned char>(byte), 2, 16, QChar::fromLatin1('0')).toUpper());
+	}
+	return parts.join(':');
+}
+
+QString PacketEditorModuleWidget::formatIpv4Address(const QByteArray &bytes)
+{
+	if (bytes.size() != 4) {
+		return QString();
+	}
+	QStringList parts;
+	parts.reserve(4);
+	for (const auto byte : bytes) {
+		parts.append(QString::number(static_cast<unsigned char>(byte)));
+	}
+	return parts.join('.');
 }
 
 QByteArray PacketEditorModuleWidget::parseHexBytes(const QString &text, int expectedSize)
