@@ -5,6 +5,7 @@
 #include <QString>
 #include <QStringList>
 
+namespace Core {
 class Launcher {
     public:
         Launcher(int argc, char *argv[]);
@@ -39,6 +40,7 @@ class Launcher {
                     return std::nullopt;
         }
 
+	virtual bool launchUpdater(UpdaterLaunch action) = 0;
 	int executeApplication();
 
         struct InstanceSetter {
@@ -57,4 +59,5 @@ class Launcher {
         QString _initialWorkingDir;
         QString _customWorkingDir;
 
+};
 };

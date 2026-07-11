@@ -1,21 +1,28 @@
+
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(JANSSON REQUIRED jansson)
+
 add_library(libboar STATIC
-	${CMAKE_CURRENT_SOURCE_DIR}/appconfig.cpp
-	${CMAKE_CURRENT_SOURCE_DIR}/appconfig.h
-	${CMAKE_CURRENT_SOURCE_DIR}/db.c
-	${CMAKE_CURRENT_SOURCE_DIR}/db.h
-	${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.c
-	${CMAKE_CURRENT_SOURCE_DIR}/sqlite3.h
-	${CMAKE_CURRENT_SOURCE_DIR}/packet-builder.c
-	${CMAKE_CURRENT_SOURCE_DIR}/packet-builder.h
+	./appconfig.cpp
+	./appconfig.h
+	./db.c
+	./db.h
+	./sqlite3.c
+	./sqlite3.h
+	./packet-builder.c
+	./packet-builder.h
+	./diameter.c
+	./diameter.h
+	./asn1-primitives.c
+	./asn1.h
+	./generated/tcap.c
+	./generated/tcap.h
 )
 target_include_directories(libboar PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}
 	${CMAKE_CURRENT_SOURCE_DIR}/..
 	${JANSSON_INCLUDE_DIRS}
 )
-find_package(PkgConfig REQUIRED)
-pkg_check_modules(JANSSON REQUIRED jansson)
-
 target_link_libraries(libboar PUBLIC
 	Qt6::Core
 	${JANSSON_LIBRARIES}
@@ -26,12 +33,6 @@ target_link_libraries(libboar PUBLIC
 #add_subdirectory(camel)
 
 target_sources(libboar PRIVATE
-	${CMAKE_CURRENT_SOURCE_DIR}/diameter.c
-	${CMAKE_CURRENT_SOURCE_DIR}/diameter.h
-	${CMAKE_CURRENT_SOURCE_DIR}/asn1-primitives.c
-	${CMAKE_CURRENT_SOURCE_DIR}/asn1.h
-	${CMAKE_CURRENT_SOURCE_DIR}/generated/tcap.c
-	${CMAKE_CURRENT_SOURCE_DIR}/generated/tcap.h
 )
 target_include_directories(libboar PUBLIC
 	${CMAKE_CURRENT_SOURCE_DIR}/..

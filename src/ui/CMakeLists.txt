@@ -6,7 +6,7 @@ qt6_wrap_ui(Boar_UI_HEADERS
 )
 
 add_library(qtui OBJECT
-	${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
+#	${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/apptheme.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/apptheme.h
 	${CMAKE_CURRENT_SOURCE_DIR}/resources.qrc

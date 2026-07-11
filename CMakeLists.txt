@@ -27,7 +27,7 @@ if(USE_qt6)
 	find_package(Qt6 REQUIRED COMPONENTS Core Widgets)
 	add_subdirectory(src)
 	add_executable(Boar
-		$<TARGET_OBJECTS:app>
+		$<TARGET_OBJECTS:core>
 		$<TARGET_OBJECTS:qtui>
 		$<TARGET_OBJECTS:qtui_dialogs>
 		$<TARGET_OBJECTS:qtui_widgets>
