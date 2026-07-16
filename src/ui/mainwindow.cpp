@@ -172,7 +172,7 @@ void MainWindow::saveForgedPacket(const ForgedPacketRecord &packet)
 
 void MainWindow::openForgedPacket(const ForgedPacketRecord &packet)
 {
-	packetEditorModuleWidget_->loadForgedPacket(packet);
+	packetEditorModuleWidget_->loadPacket(packet);
 	ui_->navList->setCurrentRow(1);
 	ui_->stackMain->setCurrentIndex(1);
 	appendApplicationLog(QStringLiteral("Loaded packet into generator: %1").arg(packet.name));

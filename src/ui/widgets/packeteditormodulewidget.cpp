@@ -12,6 +12,7 @@
 #include <QPushButton>
 #include <QSignalBlocker>
 #include <QStatusBar>
+#include <QStyle>
 #include <QTableWidget>
 #include <QTableWidgetItem>
 #include <QUuid>
@@ -33,31 +34,50 @@ PacketEditorModuleWidget::PacketEditorModuleWidget(QWidget *parent)
 	, tcapEditorWidget_(std::make_unique<TcapEditorWidget>(this))
 {
 	ui_->setupUi(this);
+
 	if (ui_->tableHexEditor) {
-		QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-		font.setFixedPitch(true);
-		font.setKerning(false);
-		font.setPointSize(10);
-		ui_->tableHexEditor->setFont(font);
 		ui_->tableHexEditor->horizontalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 		ui_->tableHexEditor->verticalHeader()->setSectionResizeMode(QHeaderView::Fixed);
 		ui_->tableHexEditor->verticalHeader()->setDefaultSectionSize(20);
+		ui_->tableHexEditor->verticalHeader()->setFixedWidth(
+				ui_->tableHexEditor->fontMetrics().horizontalAdvance(QStringLiteral("0000")) + 12);
 		ui_->tableHexEditor->horizontalHeader()->setDefaultSectionSize(24);
-		ui_->tableHexEditor->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-		ui_->tableHexEditor->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
+		ui_->tableHexEditor->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+		ui_->tableHexEditor->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOn);
+		const int hexEditorWidth =
+				ui_->tableHexEditor->verticalHeader()->width()
+				+ (ui_->tableHexEditor->columnCount()
+						* ui_->tableHexEditor->horizontalHeader()->defaultSectionSize())
+				+ ui_->tableHexEditor->style()->pixelMetric(QStyle::PM_ScrollBarExtent)
+				+ (ui_->tableHexEditor->frameWidth() * 2);
+		ui_->tableHexEditor->setMinimumWidth(0);
+		ui_->tableHexEditor->setFixedWidth(hexEditorWidth);
+		if (ui_->groupHexView && ui_->hexLayout) {
+			const QMargins layoutMargins = ui_->hexLayout->contentsMargins();
+			const int groupWidth = hexEditorWidth
+					+ layoutMargins.left()
+					+ layoutMargins.right()
+					+ (ui_->groupHexView->style()->pixelMetric(QStyle::PM_DefaultFrameWidth) * 2);
+			ui_->groupHexView->setMinimumWidth(0);
+			ui_->groupHexView->setFixedWidth(groupWidth);
+		}
 		ui_->tableHexEditor->setSelectionMode(QAbstractItemView::SingleSelection);
 		ui_->tableHexEditor->setSelectionBehavior(QAbstractItemView::SelectItems);
 		ui_->tableHexEditor->setAlternatingRowColors(false);
 	}
-	ui_->protocolStack->addWidget(diameterEditorWidget_.get());
-	ui_->protocolStack->addWidget(new QWidget(this));
-	ui_->protocolStack->addWidget(tcapEditorWidget_.get());
+
+	if (ui_->protocolStack) {
+		ui_->protocolStack->addWidget(diameterEditorWidget_.get());
+		ui_->protocolStack->addWidget(new QWidget(this));
+		ui_->protocolStack->addWidget(tcapEditorWidget_.get());
+	}
+
 	if (ui_->splitterContent) {
 		ui_->splitterContent->setChildrenCollapsible(false);
 		ui_->splitterContent->setStretchFactor(0, 3);
-		ui_->splitterContent->setStretchFactor(1, 1);
-		ui_->splitterContent->setSizes({720, 240});
+		ui_->splitterContent->setStretchFactor(1, 0);
 	}
+
 	diameterEditorWidget_->setOnTemplateChanged([this](const QByteArray &buffer) {
 		if (syncingHexView_) {
 			return;
@@ -65,52 +85,65 @@ PacketEditorModuleWidget::PacketEditorModuleWidget(QWidget *parent)
 		currentPacketBytes_ = buffer;
 		syncHexEditorFromBuffer();
 	});
-	tcapEditorWidget_->setOnPacketChanged([this](const QByteArray &buffer) {
-		if (syncingHexView_) {
-			return;
-		}
-		currentPacketBytes_ = buffer;
-		syncHexEditorFromBuffer();
+
+	tcapEditorWidget_->setOnPacketChanged(
+			[this](const QByteArray &buffer) {
+				if (syncingHexView_)
+					return;
+
+				currentPacketBytes_ = buffer;
+			syncHexEditorFromBuffer();
 	});
-	connect(ui_->comboProtocolSelector, &QComboBox::currentIndexChanged, this, [this](int index) {
-		ui_->protocolStack->setCurrentIndex(index);
-	});
-	if (ui_->btnLoadPcap) {
-		connect(ui_->btnLoadPcap, &QPushButton::clicked, this, [this]() {
-			loadHexFromFile();
-			if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 0) {
-				diameterEditorWidget_->openTemplateFileDialog();
-				const QByteArray loadedBuffer = diameterEditorWidget_->loadedTemplateBuffer();
-				if (!loadedBuffer.isEmpty()) {
-					currentPacketBytes_ = loadedBuffer;
-					syncHexEditorFromBuffer();
-				}
-				return;
+
+	connect(ui_->comboProtocolSelector,
+			&QComboBox::currentIndexChanged,
+			this,
+			[this](int index) {
+				ui_->protocolStack->setCurrentIndex(index);
 			}
-			if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 2) {
-				tcapEditorWidget_->openTemplateFileDialog();
-				const QByteArray loadedBuffer = tcapEditorWidget_->loadedTemplateBuffer();
-				if (!loadedBuffer.isEmpty()) {
-					currentPacketBytes_ = tcapEditorWidget_->encodeCurrentMessage();
-					syncHexEditorFromBuffer();
+	);
+
+	if (ui_->btnLoadTemplate) {
+		connect(ui_->btnLoadTemplate,
+				&QPushButton::clicked,
+				this,
+				[this]() {
+					loadHexFromFile();
+					if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 0) {
+						diameterEditorWidget_->openTemplateFileDialog();
+						const QByteArray loadedBuffer = diameterEditorWidget_->currentLoadedBytes();
+						currentPacketBytes_ = loadedBuffer;
+						syncHexEditorFromBuffer();
+						return;
+					}
+					if (ui_->comboProtocolSelector && ui_->comboProtocolSelector->currentIndex() == 2) {
+						tcapEditorWidget_->openTemplateFileDialog();
+						const QByteArray loadedBuffer = tcapEditorWidget_->loadedTemplateBuffer();
+						if (!loadedBuffer.isEmpty()) {
+							currentPacketBytes_ = tcapEditorWidget_->encodeCurrentMessage();
+							syncHexEditorFromBuffer();
+						}
+					}
 				}
-			}
-		});
-	}
-	if (ui_->btnExportPcap) {
-		connect(ui_->btnExportPcap, &QPushButton::clicked, this, [this]() {
-			exportPcap();
-		});
+		);
 	}
 	if (ui_->btnSaveCurrentTemplate) {
-		connect(ui_->btnSaveCurrentTemplate, &QPushButton::clicked, this, [this]() {
-			saveTemplate();
-		});
+		connect(ui_->btnSaveCurrentTemplate,
+				&QPushButton::clicked,
+				this,
+				[this]() {
+					saveTemplate();
+				}
+		);
 	}
 	if (ui_->btnSaveTemplate) {
-		connect(ui_->btnSaveTemplate, &QPushButton::clicked, this, [this]() {
-			saveTemplateAs();
-		});
+		connect(ui_->btnSaveTemplate,
+				&QPushButton::clicked,
+				this,
+				[this]() {
+					saveTemplateAs();
+				}
+		);
 	}
 	if (ui_->btnValidate) {
 		connect(ui_->btnValidate, &QPushButton::clicked, this, [this]() {
@@ -120,11 +153,6 @@ PacketEditorModuleWidget::PacketEditorModuleWidget(QWidget *parent)
 	if (ui_->btnCloseTemplate) {
 		connect(ui_->btnCloseTemplate, &QPushButton::clicked, this, [this]() {
 			closeCurrentTemplate();
-		});
-	}
-	if (ui_->btnSend) {
-		connect(ui_->btnSend, &QPushButton::clicked, this, [this]() {
-			injectPacket();
 		});
 	}
 	if (ui_->tableHexEditor) {
@@ -145,7 +173,7 @@ void PacketEditorModuleWidget::setOnPacketForged(const std::function<void(const 
 	onPacketForged_ = callback;
 }
 
-void PacketEditorModuleWidget::loadForgedPacket(const ForgedPacketRecord &packet)
+void PacketEditorModuleWidget::loadPacket(const ForgedPacketRecord &packet)
 {
 	editingPacketId_ = packet.id;
 	currentPacketBytes_ = packet.payload;
@@ -544,7 +572,9 @@ QString PacketEditorModuleWidget::packetTypeKey() const
 	if (protocol.contains(QStringLiteral("diameter"))) {
 		return QStringLiteral("diameter");
 	}
-	if (protocol.contains(QStringLiteral("tcap")) || protocol.contains(QStringLiteral("m3ua")) || protocol.contains(QStringLiteral("sccp"))) {
+	if (protocol.contains(QStringLiteral("tcap")) ||
+			protocol.contains(QStringLiteral("m3ua")) ||
+			protocol.contains(QStringLiteral("sccp"))) {
 		return QStringLiteral("m3ua");
 	}
 	if (protocol.contains(QStringLiteral("gtp"))) {
@@ -567,14 +597,25 @@ void PacketEditorModuleWidget::populateHexTable(const QByteArray &bytes)
 		return;
 	}
 	const int rowCount = (bytes.size() + 7) / 8;
+
 	ui_->tableHexEditor->clearContents();
 	ui_->tableHexEditor->setRowCount(rowCount);
+
 	for (int row = 0; row < rowCount; ++row) {
-		ui_->tableHexEditor->setVerticalHeaderItem(row, new QTableWidgetItem(QStringLiteral("%1").arg(row * 8, 4, 16, QChar::fromLatin1('0')).toUpper()));
+		/* row header */
+		ui_->tableHexEditor->setVerticalHeaderItem(row,
+				new QTableWidgetItem(QStringLiteral("%1").arg(row * 8, 4, 16,
+						QChar::fromLatin1('0')).toUpper()));
+
 		for (int column = 0; column < 8; ++column) {
 			const int index = row * 8 + column;
 			auto *item = new QTableWidgetItem(index < bytes.size()
-				? QStringLiteral("%1").arg(static_cast<unsigned char>(bytes.at(index)), 2, 16, QChar::fromLatin1('0')).toUpper()
+				? QStringLiteral("%1")
+					.arg(static_cast<unsigned char>(bytes.at(index)),
+							2,
+							16,
+							QChar::fromLatin1('0'))
+						.toUpper()
 				: QString());
 			item->setTextAlignment(Qt::AlignCenter);
 			ui_->tableHexEditor->setItem(row, column, item);
@@ -683,7 +724,7 @@ void PacketEditorModuleWidget::saveTemplate()
 	}
 	if (ui_->comboProtocolSelector->currentIndex() == 0) {
 		if (diameterEditorWidget_->saveTemplate()) {
-			currentPacketBytes_ = diameterEditorWidget_->currentTemplateBuffer();
+			currentPacketBytes_ = diameterEditorWidget_->currentLoadedBytes();
 			syncHexEditorFromBuffer();
 			showStatusMessage(QStringLiteral("Template saved"));
 			return;
@@ -729,7 +770,10 @@ void PacketEditorModuleWidget::saveTemplateAs()
 		showStatusMessage(QStringLiteral("Failed to save template"));
 		return;
 	}
-	currentPacketBytes_ = isDiameter ? diameterEditorWidget_->currentTemplateBuffer() : tcapEditorWidget_->encodeCurrentMessage();
+	currentPacketBytes_ = isDiameter ?
+		diameterEditorWidget_->currentLoadedBytes() :
+		tcapEditorWidget_->encodeCurrentMessage();
+
 	syncHexEditorFromBuffer();
 	showStatusMessage(QStringLiteral("Template saved"));
 }

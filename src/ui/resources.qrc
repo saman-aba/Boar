@@ -5,4 +5,7 @@
         <file>theme_module_shared.qss</file>
         <file>theme_packet_generator.qss</file>
     </qresource>
+    <qresource prefix="/branding">
+        <file alias="app_icon.png">../../app_icon.png</file>
+    </qresource>
 </RCC>

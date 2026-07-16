@@ -9,6 +9,7 @@
 #include "../forgedpacketrecord.h"
 
 class PacketExportDialog;
+class ScenarioBuilderWidget;
 
 namespace Ui
 {
@@ -48,4 +49,5 @@ private:
 	std::function<void(const QString &)> onEditPacket_ {};
 	std::function<void(const ForgedPacketRecord &)> onExportPacket_ {};
 	std::unique_ptr<Ui::DashboardModuleWidget> ui_;
+	std::unique_ptr<ScenarioBuilderWidget> scenarioBuilderWidget_;
 };

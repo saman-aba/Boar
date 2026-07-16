@@ -8,9 +8,11 @@
 #include <QMessageBox>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QTabWidget>
 #include <QTreeWidget>
 #include <QTreeWidgetItem>
 
+#include "scenariobuilderwidget.h"
 #include "ui_DashboardModuleWidget.h"
 
 namespace
@@ -24,11 +26,22 @@ QString packetLabel(const ForgedPacketRecord &packet)
 DashboardModuleWidget::DashboardModuleWidget(QWidget *parent)
 	: QWidget(parent)
 	, ui_(std::make_unique<Ui::DashboardModuleWidget>())
+	, scenarioBuilderWidget_(std::make_unique<ScenarioBuilderWidget>(this))
 {
 	ui_->setupUi(this);
+	if (ui_->dashboardTabs) {
+		ui_->dashboardTabs->addTab(scenarioBuilderWidget_.get(), QStringLiteral("Scenario Builder"));
+	}
 	if (ui_->treeRecentSessions) {
 		ui_->treeRecentSessions->setColumnCount(6);
-		ui_->treeRecentSessions->setHeaderLabels({QStringLiteral("Packet"), QStringLiteral("Protocol"), QStringLiteral("Transport"), QStringLiteral("Source"), QStringLiteral("Destination"), QStringLiteral("Status")});
+		ui_->treeRecentSessions->setHeaderLabels({
+				QStringLiteral("Packet"),
+				QStringLiteral("Protocol"),
+				QStringLiteral("Transport"),
+				QStringLiteral("Source"),
+				QStringLiteral("Destination"),
+				QStringLiteral("Status")
+		});
 		connect(ui_->treeRecentSessions, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem *, int) {
 			const auto packet = currentPacket();
 			if (!packet.id.isEmpty() && onOpenPacket_) {
@@ -76,11 +89,13 @@ DashboardModuleWidget::DashboardModuleWidget(QWidget *parent)
 			if (packet.id.isEmpty() || !onRemovePacket_) {
 				return;
 			}
+
 			const auto answer = QMessageBox::question(this,
-													 QStringLiteral("Remove Packet"),
-													 QStringLiteral("Remove selected packet from dashboard?"),
-													 QMessageBox::Yes | QMessageBox::No,
-													 QMessageBox::No);
+					QStringLiteral("Remove Packet"),
+					QStringLiteral("Remove selected packet from dashboard?"),
+					QMessageBox::Yes | QMessageBox::No,
+					QMessageBox::No);
+
 			if (answer != QMessageBox::Yes) {
 				return;
 			}
@@ -191,13 +206,28 @@ void DashboardModuleWidget::refreshPacketTree()
 		auto *item = new QTreeWidgetItem(ui_->treeRecentSessions);
 		item->setText(0, packetLabel(packet));
 		item->setText(1, packet.protocol);
-		item->setText(2, packet.transportProtocol.isEmpty() ? QStringLiteral("Raw") : packet.transportProtocol);
-		item->setText(3, packet.sourceIp.isEmpty() ? packet.sourceMac : packet.sourceIp);
-		item->setText(4, packet.destinationIp.isEmpty() ? packet.destinationMac : packet.destinationIp);
-		item->setText(5, packet.summary.isEmpty() ? QStringLiteral("Ready") : packet.summary);
+
+		item->setText(2, packet.transportProtocol.isEmpty() ?
+				QStringLiteral("Raw") :
+				packet.transportProtocol);
+
+		item->setText(3, packet.sourceIp.isEmpty() ?
+				packet.sourceMac :
+				packet.sourceIp);
+
+		item->setText(4, packet.destinationIp.isEmpty() ?
+				packet.destinationMac :
+				packet.destinationIp);
+
+		item->setText(5, packet.summary.isEmpty() ?
+				QStringLiteral("Ready") :
+				packet.summary);
+
 		item->setData(0, Qt::UserRole, packet.id);
 	}
-	setPacketsModelSelection(packets_.isEmpty() ? QString() : packets_.first().id);
+	setPacketsModelSelection(packets_.isEmpty() ?
+			QString() :
+			packets_.first().id);
 }
 
 void DashboardModuleWidget::setPacketsModelSelection(const QString &packetId)
@@ -234,32 +264,35 @@ void DashboardModuleWidget::requestExportCurrentPacket()
 	if (dialog.exec() != QDialog::Accepted) {
 		return;
 	}
-	const QString fileName = packet.exportBaseName.isEmpty() ? QStringLiteral("packet") : packet.exportBaseName;
+	const QString fileName = packet.exportBaseName.isEmpty() ?
+			QStringLiteral("packet") :
+			packet.exportBaseName;
+
 	QString filePath;
 	switch (dialog.exportType()) {
 	case PacketExportDialog::ExportType::Pcap:
 		filePath = QFileDialog::getSaveFileName(this,
-											   QStringLiteral("Export PCAP"),
-											   fileName + QStringLiteral(".pcap"),
-											   QStringLiteral("PCAP Files (*.pcap)"));
+				QStringLiteral("Export PCAP"),
+				fileName + QStringLiteral(".pcap"),
+				QStringLiteral("PCAP Files (*.pcap)"));
 		break;
 	case PacketExportDialog::ExportType::HexDump:
 		filePath = QFileDialog::getSaveFileName(this,
-											   QStringLiteral("Export Hex Dump"),
-											   fileName + QStringLiteral(".hex"),
-											   QStringLiteral("Hex Files (*.hex);;Text Files (*.txt)"));
+				QStringLiteral("Export Hex Dump"),
+				fileName + QStringLiteral(".hex"),
+				QStringLiteral("Hex Files (*.hex);;Text Files (*.txt)"));
 		break;
 	case PacketExportDialog::ExportType::HexString:
 		filePath = QFileDialog::getSaveFileName(this,
-											   QStringLiteral("Export Hex String"),
-											   fileName + QStringLiteral(".txt"),
-											   QStringLiteral("Text Files (*.txt)"));
+				QStringLiteral("Export Hex String"),
+				fileName + QStringLiteral(".txt"),
+				QStringLiteral("Text Files (*.txt)"));
 		break;
 	case PacketExportDialog::ExportType::Binary:
 		filePath = QFileDialog::getSaveFileName(this,
-											   QStringLiteral("Export Binary"),
-											   fileName + QStringLiteral(".bin"),
-											   QStringLiteral("Binary Files (*.bin)"));
+				QStringLiteral("Export Binary"),
+				fileName + QStringLiteral(".bin"),
+				QStringLiteral("Binary Files (*.bin)"));
 		break;
 	}
 	if (filePath.isEmpty()) {
@@ -312,7 +345,10 @@ void DashboardModuleWidget::requestTransmitCurrentPacket()
 	if (packet.id.isEmpty() || !onTransmitPacket_) {
 		return;
 	}
-	const QString interfaceName = QInputDialog::getText(this, QStringLiteral("Transmit Packet"), QStringLiteral("Interface / channel name"));
+	const QString interfaceName = QInputDialog::getText(this,
+			QStringLiteral("Transmit Packet"),
+			QStringLiteral("Interface / channel name"));
+
 	if (interfaceName.isEmpty()) {
 		return;
 	}

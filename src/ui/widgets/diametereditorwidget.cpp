@@ -46,10 +46,22 @@ DiameterEditorWidget::DiameterEditorWidget(QWidget *parent)
 			}
 			item->setText(0, dialog.avpName());
 			item->setText(1, QString::number(dialog.avpCode()));
-			item->setText(2, dialog.avpFlags().contains(QStringLiteral("V")) ? QStringLiteral("✓") : QStringLiteral(""));
-			item->setText(3, dialog.avpFlags().contains(QStringLiteral("M")) ? QStringLiteral("✓") : QStringLiteral(""));
-			item->setText(4, dialog.avpFlags().contains(QStringLiteral("P")) ? QStringLiteral("✓") : QStringLiteral(""));
-			item->setText(5, formatAvpValue(dialog.avpType(), dialog.avpDerivedType(), dialog.avpValue()));
+			item->setText(2, dialog.avpFlags().contains(QStringLiteral("V")) ?
+					QStringLiteral("✓") :
+					QStringLiteral(""));
+
+			item->setText(3, dialog.avpFlags().contains(QStringLiteral("M")) ?
+					QStringLiteral("✓") :
+					QStringLiteral(""));
+
+			item->setText(4, dialog.avpFlags().contains(QStringLiteral("P"))
+					? QStringLiteral("✓") :
+					QStringLiteral(""));
+
+			item->setText(5, formatAvpValue(dialog.avpType(),
+						dialog.avpDerivedType(),
+						dialog.avpValue()));
+
 			item->setData(0, Qt::UserRole, dialog.avpType());
 			item->setData(0, Qt::UserRole + 1, dialog.avpDerivedType());
 			item->setData(0, Qt::UserRole + 2, dialog.avpValue());
@@ -75,13 +87,27 @@ DiameterEditorWidget::DiameterEditorWidget(QWidget *parent)
 			}
 			item->setText(0, dialog.avpName());
 			item->setText(1, QString::number(dialog.avpCode()));
-			item->setText(2, dialog.avpFlags().contains(QStringLiteral("V")) ? QStringLiteral("✓") : QStringLiteral(""));
-			item->setText(3, dialog.avpFlags().contains(QStringLiteral("M")) ? QStringLiteral("✓") : QStringLiteral(""));
-			item->setText(4, dialog.avpFlags().contains(QStringLiteral("P")) ? QStringLiteral("✓") : QStringLiteral(""));
-			item->setText(5, formatAvpValue(dialog.avpType(), dialog.avpDerivedType(), dialog.avpValue()));
+
+			item->setText(2, dialog.avpFlags().contains(QStringLiteral("V")) ?
+					QStringLiteral("✓") :
+					QStringLiteral(""));
+
+			item->setText(3, dialog.avpFlags().contains(QStringLiteral("M")) ?
+					QStringLiteral("✓") :
+					QStringLiteral(""));
+
+			item->setText(4, dialog.avpFlags().contains(QStringLiteral("P")) ?
+					QStringLiteral("✓") :
+					QStringLiteral(""));
+
+			item->setText(5, formatAvpValue(dialog.avpType(),
+					dialog.avpDerivedType(),
+					dialog.avpValue()));
+
 			item->setData(0, Qt::UserRole, dialog.avpType());
 			item->setData(0, Qt::UserRole + 1, dialog.avpDerivedType());
 			item->setData(0, Qt::UserRole + 2, dialog.avpValue());
+
 			insertAvpItemAfterSelection(item);
 			notifyTemplateChanged();
 		});
@@ -128,16 +154,19 @@ void DiameterEditorWidget::selectTemplateFile()
 		ui_->btnAutoPopulate->setToolTip(filePath);
 	}
 	if (loadedTemplateBuffer_.isEmpty()) {
+		loadedBytes_.clear();
 		return;
 	}
 	struct diameter_pkt *packet = diameter_read_json_packet(loadedTemplateBuffer_.constData());
 	if (!packet) {
+		loadedBytes_.clear();
 		return;
 	}
+	loadedBytes_ = serializeTemplateBuffer(loadedTemplateBuffer_);
 	populateFromPacket(packet);
 	diameter_packet_free(packet);
 	if (onTemplateChanged_) {
-		onTemplateChanged_(loadedTemplateBuffer_);
+		onTemplateChanged_(loadedBytes_);
 	}
 }
 
@@ -150,6 +179,27 @@ bool DiameterEditorWidget::loadTemplateBuffer(const QString &filePath)
 	}
 	loadedTemplateBuffer_ = file.readAll();
 	return !loadedTemplateBuffer_.isEmpty();
+}
+
+QByteArray DiameterEditorWidget::serializeTemplateBuffer(const QByteArray &buffer) const
+{
+	if (buffer.isEmpty()) {
+		return {};
+	}
+	struct diameter_pkt *packet = diameter_read_json_packet(buffer.constData());
+	if (!packet) {
+		return {};
+	}
+	QByteArray serializedBytes(65535, Qt::Uninitialized);
+	const int serializedSize = diameter_serialize_packet(
+			packet,
+			reinterpret_cast<uint8_t *>(serializedBytes.data()));
+	diameter_packet_free(packet);
+	if (serializedSize <= 0 || serializedSize > serializedBytes.size()) {
+		return {};
+	}
+	serializedBytes.resize(serializedSize);
+	return serializedBytes;
 }
 
 QString DiameterEditorWidget::formatAvpFlags(unsigned char flags) const
@@ -172,7 +222,9 @@ QString DiameterEditorWidget::displayAvpName(unsigned int code) const
 	return QStringLiteral("AVP %1").arg(code);
 }
 
-QString DiameterEditorWidget::formatAvpValue(const QString &type, const QString &derivedType, const QString &rawValue) const
+QString DiameterEditorWidget::formatAvpValue(const QString &type,
+		const QString &derivedType,
+		const QString &rawValue) const
 {
 	if (type == QStringLiteral("OctetString") && derivedType != QStringLiteral("UTF8String")
 		&& derivedType != QStringLiteral("DiameterIdentity")
@@ -184,7 +236,9 @@ QString DiameterEditorWidget::formatAvpValue(const QString &type, const QString 
 	return rawValue;
 }
 
-void DiameterEditorWidget::populateAvpTree(const diameter_avp *avps, const QJsonArray &descriptorAvps, QTreeWidgetItem *parentItem)
+void DiameterEditorWidget::populateAvpTree(const diameter_avp *avps,
+		const QJsonArray &descriptorAvps,
+		QTreeWidgetItem *parentItem)
 {
 	int descriptorIndex = 0;
 	for (auto *avp = avps; avp; avp = avp->next, ++descriptorIndex) {
@@ -192,20 +246,42 @@ void DiameterEditorWidget::populateAvpTree(const diameter_avp *avps, const QJson
 		const QJsonObject descriptorObject = descriptorAvps.at(descriptorIndex).toObject();
 		const QString descriptorName = descriptorObject.value(QStringLiteral("name")).toString();
 		const QString descriptorType = descriptorObject.value(QStringLiteral("type")).toString();
-		item->setText(0, descriptorName.isEmpty() ? displayAvpName(AVP_HEADER(avp).code) : descriptorName);
+
+		item->setText(0, descriptorName.isEmpty() ?
+				displayAvpName(AVP_HEADER(avp).code) :
+				descriptorName);
 		item->setText(1, QString::number(AVP_HEADER(avp).code));
-		item->setText(2, (AVP_HEADER(avp).flags & AVP_FLAG_VENDOR) ? QStringLiteral("✓") : QStringLiteral(""));
-		item->setText(3, (AVP_HEADER(avp).flags & AVP_FLAG_MANDATORY) ? QStringLiteral("✓") : QStringLiteral(""));
-		item->setText(4, (AVP_HEADER(avp).flags & AVP_FLAG_PROTECTED) ? QStringLiteral("✓") : QStringLiteral(""));
+
+		item->setText(2, (AVP_HEADER(avp).flags & AVP_FLAG_VENDOR) ?
+				QStringLiteral("✓") :
+				QStringLiteral(""));
+
+		item->setText(3, (AVP_HEADER(avp).flags & AVP_FLAG_MANDATORY) ?
+				QStringLiteral("✓") :
+				QStringLiteral(""));
+
+		item->setText(4, (AVP_HEADER(avp).flags & AVP_FLAG_PROTECTED) ?
+				QStringLiteral("✓") :
+				QStringLiteral(""));
+
 		switch (avp->type) {
 		case OctetString: {
-			const QString rawValue = avp->data.octetstring ? QString::fromUtf8(avp->data.octetstring) : QString();
-			const QString effectiveType = descriptorType.isEmpty() ? QStringLiteral("OctetString") : descriptorType;
+			const QString rawValue = avp->data.octetstring ?
+					QString::fromUtf8(avp->data.octetstring) :
+					QString();
+
+			const QString effectiveType = descriptorType.isEmpty() ?
+					QStringLiteral("OctetString") :
+					descriptorType;
+
 			const QString displayValue = formatAvpValue(QStringLiteral("OctetString"), effectiveType, rawValue);
 			item->setText(5, displayValue);
 			item->setData(0, Qt::UserRole, QStringLiteral("OctetString"));
 			item->setData(0, Qt::UserRole + 1, effectiveType);
-			item->setData(0, Qt::UserRole + 2, displayValue == rawValue ? rawValue : displayValue);
+
+			item->setData(0, Qt::UserRole + 2, displayValue == rawValue ?
+					rawValue :
+					displayValue);
 			break;
 		}
 		case Integer32: {
@@ -251,7 +327,8 @@ void DiameterEditorWidget::populateAvpTree(const diameter_avp *avps, const QJson
 			ui_->treeAvps->addTopLevelItem(item);
 		}
 		if (avp->type == Grouped && avp->data.group) {
-			populateAvpTree(static_cast<const diameter_avp *>(avp->data.group), descriptorObject.value(QStringLiteral("value")).toArray(), item);
+			populateAvpTree(static_cast<const diameter_avp *>(avp->data.group),
+					descriptorObject.value(QStringLiteral("value")).toArray(), item);
 		}
 	}
 }
@@ -312,6 +389,7 @@ QByteArray DiameterEditorWidget::loadedTemplateBuffer() const
 void DiameterEditorWidget::setTemplateBuffer(const QByteArray &buffer)
 {
 	loadedTemplateBuffer_ = buffer;
+	loadedBytes_.clear();
 	if (loadedTemplateBuffer_.isEmpty()) {
 		return;
 	}
@@ -319,6 +397,7 @@ void DiameterEditorWidget::setTemplateBuffer(const QByteArray &buffer)
 	if (!packet) {
 		return;
 	}
+	loadedBytes_ = serializeTemplateBuffer(loadedTemplateBuffer_);
 	populateFromPacket(packet);
 	diameter_packet_free(packet);
 }
@@ -327,6 +406,7 @@ void DiameterEditorWidget::clearTemplate()
 {
 	selectedTemplatePath_.clear();
 	loadedTemplateBuffer_.clear();
+	loadedBytes_.clear();
 	if (ui_->comboCommand) {
 		ui_->comboCommand->setCurrentIndex(-1);
 	}
@@ -359,6 +439,11 @@ void DiameterEditorWidget::clearTemplate()
 void DiameterEditorWidget::setOnTemplateChanged(const std::function<void(const QByteArray &)> &onTemplateChanged)
 {
 	onTemplateChanged_ = onTemplateChanged;
+}
+
+QByteArray DiameterEditorWidget::currentLoadedBytes() const
+{
+	return loadedBytes_;
 }
 
 QByteArray DiameterEditorWidget::currentTemplateBuffer() const
@@ -428,8 +513,9 @@ void DiameterEditorWidget::insertAvpItemAfterSelection(QTreeWidgetItem *item)
 void DiameterEditorWidget::notifyTemplateChanged()
 {
 	loadedTemplateBuffer_ = currentTemplateBuffer();
+	loadedBytes_ = serializeTemplateBuffer(loadedTemplateBuffer_);
 	if (onTemplateChanged_) {
-		onTemplateChanged_(loadedTemplateBuffer_);
+		onTemplateChanged_(loadedBytes_);
 	}
 }
 

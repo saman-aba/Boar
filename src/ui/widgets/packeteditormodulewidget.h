@@ -25,7 +25,7 @@ public:
 	~PacketEditorModuleWidget() override;
 
 	void setOnPacketForged(const std::function<void(const ForgedPacketRecord &)> &callback);
-	void loadForgedPacket(const ForgedPacketRecord &packet);
+	void loadPacket(const ForgedPacketRecord &packet);
 	void clearEditingPacket();
 
 private:
