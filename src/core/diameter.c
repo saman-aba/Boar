@@ -32,7 +32,7 @@ static const struct val_str os_derived_table[] = {
 	{0, NULL},
 };
 
-int _serialize_diameter_avp(struct diameter_avp *avp, char *buf);
+int _serialize_diameter_avp(struct diameter_avp *avp, uint8_t *buf);
 
 static int _create_os_avp(struct diameter_avp *avp, char *val, int val_sz)
 {
@@ -684,43 +684,43 @@ struct diameter_pkt *diameter_read_json_packet(const char *buf)
 	return pkt;
 }
 
-static void _serialize_octetstring(char *buf, char *ostr, int len)
+static void _serialize_octetstring(uint8_t *buf, char *ostr, int len)
 {
 	memcpy(buf, ostr, len);
 	memset(buf + len, 0, PAD4(len));
 }
 
-static void _serialize_integer32(char *buf, int32_t val, int size)
+static void _serialize_integer32(uint8_t *buf, int32_t val, int size)
 {
 	memcpy(buf, &val, size);
 }
 
-static void _serialize_integer64(char *buf, int64_t val, int size)
+static void _serialize_integer64(uint8_t *buf, int64_t val, int size)
 {
 	memcpy(buf, &val, size);
 }
 
-static void _serialize_unsigned32(char *buf, uint32_t val, int size)
+static void _serialize_unsigned32(uint8_t *buf, uint32_t val, int size)
 {
 	memcpy(buf, &val, size);
 }
 
-static void _serialize_unsigned64(char *buf, uint64_t val, int size)
+static void _serialize_unsigned64(uint8_t *buf, uint64_t val, int size)
 {
 	memcpy(buf, &val, size);
 }
 
-static void _serialize_float32(char *buf, float val, int size)
+static void _serialize_float32(uint8_t *buf, float val, int size)
 {
 	memcpy(buf, &val, size);
 }
 
-static void _serialize_float64(char *buf, double val, int size)
+static void _serialize_float64(uint8_t *buf, double val, int size)
 {
 	memcpy(buf, &val, size);
 }
 
-static int _serialize_group(char *buf, struct diameter_avp *arr, int size)
+static int _serialize_group(uint8_t *buf, struct diameter_avp *arr, int size)
 {
 	int ret = 0;
 	while (arr) {
@@ -730,7 +730,7 @@ static int _serialize_group(char *buf, struct diameter_avp *arr, int size)
 	return ret;
 }
 
-static void _serialize_avp_data(struct diameter_avp *avp, char *buf, int size)
+static void _serialize_avp_data(struct diameter_avp *avp, uint8_t *buf, int size)
 {
 	switch (avp->type) {
 	case OctetString:
@@ -763,7 +763,7 @@ static void _serialize_avp_data(struct diameter_avp *avp, char *buf, int size)
 	}
 }
 
-int _serialize_diameter_avp(struct diameter_avp *avp, char *buf)
+int _serialize_diameter_avp(struct diameter_avp *avp, uint8_t *buf)
 {
 	int ret = 0;
 	int offt = 0;
@@ -799,7 +799,7 @@ int _serialize_diameter_avp(struct diameter_avp *avp, char *buf)
 	return ret;
 }
 
-int diameter_serialize_packet(const struct diameter_pkt *pkt, char *buf)
+int diameter_serialize_packet(const struct diameter_pkt *pkt, uint8_t *buf)
 {
 	int offt = 0;
 
