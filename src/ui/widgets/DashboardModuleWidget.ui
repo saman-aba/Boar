@@ -12,13 +12,21 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayoutDashboard">
    <item>
-    <layout class="QHBoxLayout" name="horizontalLayoutDashTop">
-     <item>
-      <widget class="QGroupBox" name="groupRecentSessions">
-       <property name="title">
-        <string>Recent Sessions</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayoutRecentSessions">
+    <widget class="QTabWidget" name="dashboardTabs">
+     <property name="currentIndex">
+      <number>0</number>
+     </property>
+     <widget class="QWidget" name="packetsTab">
+      <attribute name="title">
+       <string>Packets</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="packetsTabLayout">
+       <item>
+        <widget class="QGroupBox" name="groupRecentSessions">
+         <property name="title">
+          <string>Recent Sessions</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayoutRecentSessions">
         <item>
          <widget class="QTreeWidget" name="treeRecentSessions">
           <column>
@@ -90,10 +98,12 @@
           </item>
          </layout>
         </item>
-       </layout>
-      </widget>
-     </item>
-    </layout>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
    </item>
   </layout>
  </widget>

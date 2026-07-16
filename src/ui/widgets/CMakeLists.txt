@@ -6,6 +6,7 @@ qt6_wrap_ui(Boar_WIDGET_UI_HEADERS
 	${CMAKE_CURRENT_SOURCE_DIR}/DiameterEditorWidget.ui
 	${CMAKE_CURRENT_SOURCE_DIR}/TcapEditorWidget.ui
 	${CMAKE_CURRENT_SOURCE_DIR}/DashboardModuleWidget.ui
+	${CMAKE_CURRENT_SOURCE_DIR}/SenarioBuilder.ui
 	${CMAKE_CURRENT_SOURCE_DIR}/NodeEmulatorModuleWidget.ui
 	${CMAKE_CURRENT_SOURCE_DIR}/DatabaseModuleWidget.ui
 	${CMAKE_CURRENT_SOURCE_DIR}/MessagingModuleWidget.ui
@@ -21,6 +22,7 @@ add_library(qtui_widgets OBJECT
 	${CMAKE_CURRENT_SOURCE_DIR}/diametereditorwidget.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/tcapeditorwidget.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/dashboardmodulewidget.cpp
+	${CMAKE_CURRENT_SOURCE_DIR}/scenariobuilderwidget.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/nodeemulatormodulewidget.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/databasemodulewidget.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/messagingmodulewidget.cpp
@@ -33,6 +35,7 @@ add_library(qtui_widgets OBJECT
 	${CMAKE_CURRENT_SOURCE_DIR}/diametereditorwidget.h
 	${CMAKE_CURRENT_SOURCE_DIR}/tcapeditorwidget.h
 	${CMAKE_CURRENT_SOURCE_DIR}/dashboardmodulewidget.h
+	${CMAKE_CURRENT_SOURCE_DIR}/scenariobuilderwidget.h
 	${CMAKE_CURRENT_SOURCE_DIR}/nodeemulatormodulewidget.h
 	${CMAKE_CURRENT_SOURCE_DIR}/databasemodulewidget.h
 	${CMAKE_CURRENT_SOURCE_DIR}/messagingmodulewidget.h
